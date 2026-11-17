@@ -1,0 +1,90 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ImagepixelDrive.App.ViewModels"
+             xmlns:local="using:ImagepixelDrive.App"
+             x:Class="ImagepixelDrive.App.Views.AboutView"
+             x:DataType="vm:AboutViewModel">
+
+    <ScrollViewer>
+        <StackPanel MaxWidth="680" Margin="32,28" Spacing="16">
+
+            <Button Content="←  Zurück" Command="{Binding BackCommand}" />
+
+            <StackPanel Orientation="Horizontal" Spacing="14">
+                <Image Source="/Assets/app-icon.png" Width="56" Height="56" />
+                <StackPanel VerticalAlignment="Center">
+                    <TextBlock Classes="title" Text="Imagepixel Drive" />
+                    <TextBlock Classes="subtle" Text="{Binding Version}" />
+                </StackPanel>
+            </StackPanel>
+
+            <Border Classes="warning">
+                <TextBlock Text="{x:Static local:Texts.PreviewNote}" TextWrapping="Wrap" />
+            </Border>
+
+            <Border Classes="card">
+                <StackPanel Spacing="8">
+                    <TextBlock Classes="heading" Text="Nutzungshinweise" />
+                    <TextBlock Classes="subtle" Text="{x:Static local:Texts.TermsReminder}" />
+                    <Button Content="Nutzungshinweise öffnen" Command="{Binding OpenLinkCommand}"
+                            CommandParameter="{x:Static vm:AboutViewModel.TermsUrl}" />
+                </StackPanel>
+            </Border>
+
+            <Border Classes="card">
+                <StackPanel Spacing="8">
+                    <TextBlock Classes="heading" Text="Dein Passwort" />
+                    <TextBlock Classes="subtle" Text="{x:Static local:Texts.PasswordWarning}" />
+                </StackPanel>
+            </Border>
+
+            <Border Classes="card">
+                <StackPanel Spacing="8">
+                    <TextBlock Classes="heading" Text="Zugriff ohne dieses Programm" />
+                    <TextBlock Classes="subtle" Text="{x:Static local:Texts.EmergencyAccess}" />
+                    <Button Content="Beschreibung öffnen" Command="{Binding OpenLinkCommand}"
+                            CommandParameter="{x:Static vm:AboutViewModel.EmergencyUrl}" />
+                </StackPanel>
+            </Border>
+
+            <Border Classes="card">
+                <StackPanel Spacing="8">
+                    <TextBlock Classes="heading" Text="Freie Software" />
+                    <TextBlock Classes="subtle"
+                               Text="Imagepixel Drive ist quelloffen und steht unter der BSD-2-Clause-Lizenz. Deine Dateien werden auf deinem Rechner verschlüsselt, bevor sie ihn verlassen." />
+                    <Button Content="Quelltext auf GitHub" Command="{Binding OpenLinkCommand}"
+                            CommandParameter="{x:Static vm:AboutViewModel.SourceUrl}" />
+                </StackPanel>
+            </Border>
+
+            <Border Classes="card">
+                <StackPanel Spacing="12">
+                    <TextBlock Classes="heading" Text="Enthaltene Komponenten" />
+
+                    <StackPanel Spacing="2">
+                        <TextBlock FontWeight="Medium" Text="rclone" />
+                        <TextBlock Classes="subtle"
+                                   Text="Verschlüsselt die Dateien, zeigt das Laufwerk an und gleicht die Offline-Ordner ab. Copyright (C) 2012 by Nick Craig-Wood. MIT-Lizenz." />
+                        <Button Content="rclone.org" Margin="0,4,0,0" Command="{Binding OpenLinkCommand}"
+                                CommandParameter="{x:Static vm:AboutViewModel.RcloneUrl}" />
+                    </StackPanel>
+
+                    <StackPanel Spacing="2" IsVisible="{Binding ShowWinFsp}">
+                        <TextBlock FontWeight="Medium" Text="WinFsp" />
+                        <TextBlock Classes="subtle"
+                                   Text="Zeigt das Laufwerk unter Windows an. WinFsp - Windows File System Proxy, Copyright (C) Bill Zissimopoulos." />
+                        <Button Content="github.com/winfsp/winfsp" Margin="0,4,0,0" Command="{Binding OpenLinkCommand}"
+                                CommandParameter="{x:Static vm:AboutViewModel.WinFspUrl}" />
+                    </StackPanel>
+
+                    <StackPanel Spacing="2">
+                        <TextBlock FontWeight="Medium" Text="Weitere" />
+                        <TextBlock Classes="subtle"
+                                   Text="Avalonia, .NET und CommunityToolkit.Mvvm (MIT-Lizenz), Schrift Inter (SIL Open Font License). Die vollständigen Lizenztexte liegen im Programmordner in der Datei THIRD-PARTY-NOTICES.txt." />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

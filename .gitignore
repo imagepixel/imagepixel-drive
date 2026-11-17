@@ -1,0 +1,12 @@
+# build output and fetched programs
+/.build/
+/bin/
+/artifacts/
+[Bb]in/
+[Oo]bj/
+
+# editor settings
+.vs/
+.vscode/
+.idea/
+*.user

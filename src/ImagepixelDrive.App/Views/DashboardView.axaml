@@ -1,0 +1,133 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ImagepixelDrive.App.ViewModels"
+             xmlns:local="using:ImagepixelDrive.App"
+             x:Class="ImagepixelDrive.App.Views.DashboardView"
+             x:DataType="vm:DashboardViewModel">
+
+    <ScrollViewer>
+        <StackPanel MaxWidth="720" Margin="32,28" Spacing="16">
+
+            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="14">
+                <Image Source="/Assets/app-icon.png" Width="56" Height="56" />
+                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                    <TextBlock Classes="title" Text="Imagepixel Drive" />
+                    <TextBlock Classes="subtle" Text="{Binding StorageName}" TextTrimming="CharacterEllipsis" />
+                </StackPanel>
+                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                    <Button Content="Info" Command="{Binding ShowAboutCommand}" />
+                    <Button Content="Laufwerk trennen …" Command="{Binding AskDisconnectCommand}" />
+                </StackPanel>
+            </Grid>
+
+            <!-- asks before the drive is forgotten on this computer -->
+            <Border Classes="warning" IsVisible="{Binding ConfirmDisconnect}">
+                <StackPanel Spacing="8">
+                    <TextBlock FontWeight="SemiBold" Text="Laufwerk von diesem Rechner trennen?" />
+                    <TextBlock TextWrapping="Wrap"
+                               Text="Das Programm vergisst dann Speicherort und Passwort. Gelöscht wird nichts: Das Laufwerk bleibt, wo es gespeichert ist, und deine Offline-Ordner bleiben als gewöhnliche Ordner auf diesem Rechner. Warte vorher, bis alles gespeichert ist." />
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button Content="Trennen" Command="{Binding DisconnectCommand}" />
+                        <Button Content="Abbrechen" Command="{Binding CancelDisconnectCommand}" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- the drive -->
+            <Border Classes="card">
+                <StackPanel Spacing="8">
+                    <TextBlock Classes="heading" Text="Dein Laufwerk" />
+                    <TextBlock FontSize="18" FontWeight="SemiBold" Text="{Binding DriveStatus}" TextWrapping="Wrap" />
+                    <ProgressBar IsIndeterminate="True" Width="160" HorizontalAlignment="Left"
+                                 IsVisible="{Binding IsStarting}" />
+                    <TextBlock Classes="subtle" Text="{Binding DriveDetail}" IsVisible="{Binding IsRunning}" />
+                    <Border IsVisible="{Binding HasFailed}" Background="{DynamicResource ProblemBackgroundBrush}"
+                            CornerRadius="6" Padding="14,10">
+                        <TextBlock Text="{Binding DriveDetail}" Foreground="{DynamicResource ProblemTextBrush}"
+                                   TextWrapping="Wrap" />
+                    </Border>
+
+                    <StackPanel Orientation="Horizontal" Spacing="12" Margin="0,4,0,0">
+                        <Button Classes="accent" Content="{x:Static local:Texts.ShowDrive}" Padding="20,9"
+                                Command="{Binding OpenDriveCommand}" IsVisible="{Binding IsRunning}" />
+                        <Button Content="Erneut versuchen" Command="{Binding RetryCommand}"
+                                IsVisible="{Binding CanRetry}" />
+                        <TextBlock Classes="subtle" VerticalAlignment="Center" Text="{Binding UploadStatus}" />
+                    </StackPanel>
+
+                    <TextBlock Classes="subtle" Margin="0,4,0,0"
+                               Text="Alles, was du auf dem Laufwerk ablegst, wird auf diesem Rechner verschlüsselt, bevor es ihn verlässt." />
+                </StackPanel>
+            </Border>
+
+            <!-- Imagepixel Storage: the storage cannot be reached -->
+            <Border Classes="warning" IsVisible="{Binding !IsReachable}">
+                <TextBlock Text="{x:Static local:Texts.Unreachable}" TextWrapping="Wrap" />
+            </Border>
+
+            <!-- Imagepixel Storage: folders that are kept on this computer as well -->
+            <Border Classes="card" IsVisible="{Binding SupportsOfflineFolders}">
+                <StackPanel Spacing="10">
+                    <TextBlock Classes="heading" Text="Offline verfügbar" />
+                    <TextBlock Classes="subtle" Text="{x:Static local:Texts.OfflineHint}" />
+
+                    <ItemsControl ItemsSource="{Binding OfflineFolders}" IsVisible="{Binding HasOfflineFolders}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <StackPanel Spacing="8" />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:OfflineFolderViewModel">
+                                <Border Background="{DynamicResource PageBackgroundBrush}" CornerRadius="6" Padding="14,10">
+                                    <StackPanel Spacing="6">
+                                        <TextBlock FontWeight="SemiBold" FontSize="15" Text="{Binding RemotePath}" />
+                                        <TextBlock Classes="subtle" Text="{Binding LocalPath}" TextTrimming="CharacterEllipsis" />
+                                        <TextBlock Text="{Binding Status}" TextWrapping="Wrap" />
+                                        <Border Classes="note" Background="{DynamicResource CardBackgroundBrush}"
+                                                IsVisible="{Binding HasConflicts}">
+                                            <TextBlock Text="{Binding Conflicts}" TextWrapping="Wrap" />
+                                        </Border>
+                                        <WrapPanel>
+                                            <Button Content="Ordner öffnen" Margin="0,0,8,0" Command="{Binding OpenCommand}" />
+                                            <Button Content="Jetzt abgleichen" Margin="0,0,8,0" Command="{Binding SyncNowCommand}" />
+                                            <Button Classes="accent" Content="{Binding ConfirmLabel}" Margin="0,0,8,0"
+                                                    Command="{Binding ConfirmCommand}" IsVisible="{Binding CanConfirm}" />
+                                            <Button Content="Nicht mehr offline halten" Command="{Binding RemoveCommand}" />
+                                        </WrapPanel>
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <Border IsVisible="{Binding HasOfflineProblem}" Background="{DynamicResource ProblemBackgroundBrush}"
+                            CornerRadius="6" Padding="14,10">
+                        <TextBlock Text="{Binding OfflineProblem}" Foreground="{DynamicResource ProblemTextBrush}"
+                                   TextWrapping="Wrap" />
+                    </Border>
+
+                    <Button Content="+  Ordner vom Laufwerk auswählen" Padding="20,9"
+                            Command="{Binding AddOfflineFolderCommand}" IsEnabled="{Binding IsRunning}" />
+                    <TextBlock Classes="subtle"
+                               Text="Wenn du einen Ordner nicht mehr offline hältst, bleibt er als gewöhnlicher Ordner auf diesem Rechner liegen und wird nur nicht mehr abgeglichen." />
+                </StackPanel>
+            </Border>
+
+            <!-- a place of the customer's own -->
+            <Border Classes="card" IsVisible="{Binding IsOwnPlace}">
+                <StackPanel Spacing="8">
+                    <TextBlock Classes="heading" Text="Eigener Speicherort" />
+                    <TextBlock Classes="subtle"
+                               Text="Die verschlüsselten Dateien deines Laufwerks liegen in diesem Ordner. Verändere darin nichts von Hand:" />
+                    <TextBlock Text="{Binding OwnPlacePath}" TextWrapping="Wrap" />
+                    <TextBlock Classes="subtle"
+                               Text="Ein Laufwerk ist kein Backup. Bewahre von wichtigen Dateien immer eine zweite Kopie an einem anderen Ort auf." />
+                </StackPanel>
+            </Border>
+
+            <TextBlock Classes="subtle" Text="{x:Static local:Texts.KeepsRunning}" />
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

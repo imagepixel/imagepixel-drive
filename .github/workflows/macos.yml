@@ -1,0 +1,60 @@
+name: macOS
+
+# Builds and tests the application on a Mac of GitHub, and keeps the disk images
+# of the application as a download of the run.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: macos-latest
+    timeout-minutes: 45
+    env:
+      DOTNET_CLI_TELEMETRY_OPTOUT: 1
+      DOTNET_NOLOGO: 1
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Fetch rclone
+        run: ./get-rclone.sh
+
+      # the tests show a drive through the NFS client of macOS and sync offline folders
+      - name: Run the tests
+        run: dotnet test ImagepixelDrive.slnx --configuration Release
+
+      - name: Build the application
+        run: ./build-macos.sh
+
+      - name: Start the application
+        run: installer/macos/smoke-test.sh
+
+      # the build for Macs with an Intel chip runs here through Rosetta
+      - name: Start the application for Intel Macs
+        run: |
+          softwareupdate --install-rosetta --agree-to-license || true
+          installer/macos/smoke-test.sh x64
+
+      - name: Keep the disk images
+        uses: actions/upload-artifact@v4
+        with:
+          name: imagepixel-drive-mac
+          path: artifacts/macos/*.dmg
+          if-no-files-found: error
+
+      - name: Keep the pictures of the screens
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: screens-on-macos
+          path: artifacts/screenshots
+          if-no-files-found: ignore

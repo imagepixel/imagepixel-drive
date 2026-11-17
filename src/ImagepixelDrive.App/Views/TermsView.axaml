@@ -1,0 +1,37 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ImagepixelDrive.App.ViewModels"
+             xmlns:local="using:ImagepixelDrive.App"
+             x:Class="ImagepixelDrive.App.Views.TermsView"
+             x:DataType="vm:TermsViewModel">
+
+    <ScrollViewer>
+        <StackPanel MaxWidth="680" Margin="32,28" Spacing="16">
+
+            <StackPanel Orientation="Horizontal" Spacing="14">
+                <Image Source="/Assets/app-icon.png" Width="56" Height="56" />
+                <StackPanel VerticalAlignment="Center">
+                    <TextBlock Classes="title" Text="Willkommen bei Imagepixel Drive" />
+                    <TextBlock Classes="subtle" Text="Dein verschlüsseltes Laufwerk." />
+                </StackPanel>
+            </StackPanel>
+
+            <!-- shown once: what the user should know before using the application -->
+            <Border Classes="card">
+                <StackPanel Spacing="12">
+                    <TextBlock Classes="heading" Text="Bevor es losgeht" />
+                    <TextBlock TextWrapping="Wrap" Text="{x:Static local:Texts.TermsSoftware}" />
+                    <TextBlock TextWrapping="Wrap" Text="{x:Static local:Texts.TermsStorage}" />
+                    <TextBlock TextWrapping="Wrap" Text="{x:Static local:Texts.TermsPassword}" />
+                    <Button Content="Nutzungshinweise lesen" Command="{Binding OpenTermsCommand}" />
+                    <CheckBox IsChecked="{Binding Confirmed}">
+                        <TextBlock TextWrapping="Wrap" Text="{x:Static local:Texts.TermsConfirm}" />
+                    </CheckBox>
+                </StackPanel>
+            </Border>
+
+            <Button Classes="accent" Content="Weiter" Padding="28,9" Command="{Binding ContinueCommand}" />
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

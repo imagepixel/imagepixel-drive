@@ -1,0 +1,16 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:ImagepixelDrive.App.ViewModels"
+        xmlns:local="using:ImagepixelDrive.App"
+        x:Class="ImagepixelDrive.App.Views.MainWindow"
+        x:DataType="vm:MainViewModel"
+        Icon="/Assets/app.ico"
+        Title="{x:Static local:Texts.ProductName}"
+        Width="920" Height="720"
+        MinWidth="720" MinHeight="560"
+        WindowStartupLocation="CenterScreen"
+        Background="{DynamicResource PageBackgroundBrush}">
+
+    <ContentControl Content="{Binding CurrentPage}" />
+
+</Window>

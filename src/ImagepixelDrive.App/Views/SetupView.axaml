@@ -1,0 +1,163 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ImagepixelDrive.App.ViewModels"
+             xmlns:core="using:ImagepixelDrive.Core"
+             xmlns:local="using:ImagepixelDrive.App"
+             x:Class="ImagepixelDrive.App.Views.SetupView"
+             x:DataType="vm:SetupViewModel"
+             x:Name="Root">
+
+    <ScrollViewer>
+        <StackPanel MaxWidth="680" Margin="32,28" Spacing="16">
+
+            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="14">
+                <Image Source="/Assets/app-icon.png" Width="56" Height="56" />
+                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                    <TextBlock Classes="title" Text="Willkommen bei Imagepixel Drive" />
+                    <TextBlock Classes="subtle"
+                               Text="Dein verschlüsseltes Laufwerk. In zwei Schritten ist es eingerichtet." />
+                </StackPanel>
+                <Button Grid.Column="2" Content="Info" VerticalAlignment="Center" Command="{Binding ShowAboutCommand}" />
+            </Grid>
+
+            <!-- step 1: where the drive is stored -->
+            <Border Classes="card">
+                <StackPanel IsEnabled="{Binding CanEdit}">
+                    <TextBlock Classes="heading" Text="1. Wo sollen deine Dateien liegen?" />
+
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="10" Margin="0,12,0,0">
+                        <Button Classes="tile" Classes.selected="{Binding IsImagepixel}"
+                                Command="{Binding ChooseKindCommand}" CommandParameter="ImagepixelStorage">
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                <StackPanel Spacing="4">
+                                    <TextBlock FontWeight="SemiBold" FontSize="15" Text="Imagepixel Storage" />
+                                    <TextBlock Classes="subtle"
+                                               Text="Sicherer Online-Speicher, mit den Zugangsdaten von Imagepixel" />
+                                </StackPanel>
+                                <Border Grid.Column="1" Classes="badge" VerticalAlignment="Top">
+                                    <TextBlock Text="Empfohlen" />
+                                </Border>
+                            </Grid>
+                        </Button>
+                        <Button Grid.Column="1" Classes="tile" Classes.selected="{Binding IsOwnPlace}"
+                                Command="{Binding ChooseKindCommand}" CommandParameter="LocalFolder">
+                            <StackPanel Spacing="4">
+                                <TextBlock FontWeight="SemiBold" FontSize="15" Text="Eigener Ordner oder Festplatte" />
+                                <TextBlock Classes="subtle"
+                                           Text="Zum Beispiel in OneDrive, Google Drive oder Dropbox, oder auf einer USB-Festplatte" />
+                            </StackPanel>
+                        </Button>
+                    </Grid>
+
+                    <!-- Imagepixel Storage: everything in this block was handed out by Imagepixel -->
+                    <StackPanel IsVisible="{Binding IsImagepixel}">
+                        <Border Classes="note" Margin="0,14,0,0">
+                            <StackPanel Spacing="3">
+                                <TextBlock FontWeight="SemiBold" Text="Diese Daten bekommst du von Imagepixel" />
+                                <TextBlock Classes="subtle"
+                                           Text="Sie stehen in der Nachricht, die du nach der Einrichtung deines Speichers erhalten hast. Am schnellsten geht es mit dem Einrichtungscode: Er füllt die drei Felder darunter von selbst aus." />
+                            </StackPanel>
+                        </Border>
+
+                        <TextBlock Classes="label" Text="Einrichtungscode" />
+                        <TextBox Text="{Binding SetupCodeText}" PlaceholderText="IPD1-… (aus der Nachricht von Imagepixel einfügen)" />
+
+                        <TextBlock Classes="subtle" Margin="0,14,0,0"
+                                   Text="Ohne Einrichtungscode trägst du die drei Angaben einzeln ein:" />
+                        <TextBlock Classes="label" Text="Bucket-Name" />
+                        <TextBox Text="{Binding Bucket}" />
+                        <TextBlock Classes="label" Text="Zugangsschlüssel" />
+                        <TextBox Text="{Binding AccessKeyId}" />
+                        <TextBlock Classes="label" Text="Geheimer Schlüssel" />
+                        <TextBox Text="{Binding SecretAccessKey}" PasswordChar="●" />
+                    </StackPanel>
+
+                    <!-- a place of the customer's own -->
+                    <StackPanel IsVisible="{Binding IsOwnPlace}">
+                        <Border Classes="note" Margin="0,14,0,0">
+                            <StackPanel Spacing="3">
+                                <TextBlock FontWeight="SemiBold" Text="Du wählst einen Ort, das Programm verschlüsselt" />
+                                <TextBlock Classes="subtle"
+                                           Text="Deine Dateien werden an diesem Ort nur verschlüsselt abgelegt. Liegt er in einem Cloud-Ordner, lädt dessen Anbieter die verschlüsselten Dateien hoch und kann sie nicht lesen." />
+                            </StackPanel>
+                        </Border>
+
+                        <TextBlock Classes="label" Text="Ordner oder Festplatte für das Laufwerk" />
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                            <TextBox Text="{Binding LocalPath}" PlaceholderText="{x:Static local:Texts.LocalPathExample}" />
+                            <Button Grid.Column="1" Content="Auswählen …" Command="{Binding BrowseCommand}" />
+                        </Grid>
+
+                        <!-- cloud storage that is set up on this computer -->
+                        <StackPanel IsVisible="{Binding HasCloudFolders}" Spacing="6" Margin="0,10,0,0">
+                            <TextBlock Classes="subtle" Text="Oder einen Cloud-Speicher nehmen, der auf diesem Rechner eingerichtet ist:" />
+                            <ItemsControl ItemsSource="{Binding CloudFolders}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <WrapPanel />
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="core:CloudFolder">
+                                        <Button Content="{Binding Name}" Margin="0,0,8,6"
+                                                Command="{Binding #Root.((vm:SetupViewModel)DataContext).ChooseCloudFolderCommand}"
+                                                CommandParameter="{Binding}" />
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+
+                        <TextBlock Classes="subtle" IsVisible="{Binding HasDriveFolderHint}" Margin="0,8,0,0"
+                                   Text="{Binding DriveFolderHint}" />
+                        <Border Classes="note" IsVisible="{Binding HasCloudHint}" Margin="0,10,0,0">
+                            <TextBlock Text="{Binding CloudHint}" TextWrapping="Wrap" />
+                        </Border>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- step 2: the password -->
+            <Border Classes="card">
+                <StackPanel IsEnabled="{Binding CanEdit}">
+                    <TextBlock Classes="heading" Text="2. Das Passwort deines Laufwerks" />
+
+                    <Border Classes="note" Margin="0,12,0,0">
+                        <StackPanel Spacing="3">
+                            <TextBlock FontWeight="SemiBold" Text="Dieses Passwort legst du selbst fest" />
+                            <TextBlock Classes="subtle"
+                                       Text="Du bekommst es nicht von Imagepixel, und Imagepixel erfährt es nie. Damit werden deine Dateien auf deinem Rechner verschlüsselt, bevor sie ihn verlassen. Gibt es das Laufwerk schon, zum Beispiel von einem anderen Rechner, gibst du hier dessen Passwort ein." />
+                        </StackPanel>
+                    </Border>
+                    <Border Classes="warning" Margin="0,8,0,0">
+                        <StackPanel Spacing="3">
+                            <TextBlock FontWeight="SemiBold" Text="Wichtig: Ohne dieses Passwort sind die Dateien verloren" />
+                            <TextBlock TextWrapping="Wrap" Text="{x:Static local:Texts.PasswordWarning}" />
+                        </StackPanel>
+                    </Border>
+
+                    <TextBlock Classes="label" Text="Passwort (für ein neues Laufwerk mindestens 8 Zeichen)" />
+                    <TextBox Text="{Binding Password}" PasswordChar="●" RevealPassword="{Binding ShowPassword}" />
+                    <TextBlock Classes="label" Text="Passwort wiederholen (nur bei einem neuen Laufwerk nötig)" />
+                    <TextBox Text="{Binding PasswordRepeat}" PasswordChar="●" RevealPassword="{Binding ShowPassword}" />
+                    <CheckBox Content="Passwort anzeigen" IsChecked="{Binding ShowPassword}" Margin="0,8,0,0" />
+                </StackPanel>
+            </Border>
+
+            <Border IsVisible="{Binding HasError}" Background="{DynamicResource ProblemBackgroundBrush}"
+                    CornerRadius="6" Padding="14,10">
+                <TextBlock Text="{Binding ErrorMessage}" Foreground="{DynamicResource ProblemTextBrush}"
+                           TextWrapping="Wrap" />
+            </Border>
+
+            <StackPanel Orientation="Horizontal" Spacing="14">
+                <Button Classes="accent" Content="Laufwerk öffnen" Padding="28,9"
+                        Command="{Binding ConnectCommand}" IsEnabled="{Binding CanEdit}" />
+                <ProgressBar IsIndeterminate="True" Width="120" VerticalAlignment="Center"
+                             IsVisible="{Binding IsBusy}" />
+                <TextBlock Classes="subtle" VerticalAlignment="Center" Text="{Binding BusyText}"
+                           IsVisible="{Binding IsBusy}" />
+            </StackPanel>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

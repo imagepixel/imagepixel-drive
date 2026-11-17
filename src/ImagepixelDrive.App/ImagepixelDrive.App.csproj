@@ -1,0 +1,45 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <AssemblyName>ImagepixelDrive</AssemblyName>
+    <RootNamespace>ImagepixelDrive.App</RootNamespace>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Assets\app.ico</ApplicationIcon>
+    <Version>0.1.0</Version>
+    <Product>Imagepixel Drive</Product>
+    <Company>Imagepixel</Company>
+    <Copyright>Copyright (c) 2026, Imagepixel</Copyright>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <AvaloniaResource Include="Assets\**" />
+    <InternalsVisibleTo Include="ImagepixelDrive.App.Tests" />
+  </ItemGroup>
+
+  <!-- rclone is placed next to the application: fetched by get-rclone.ps1 for Windows
+       and by get-rclone.sh for macOS -->
+  <PropertyGroup>
+    <RcloneForMac Condition="'$(RuntimeIdentifier)' == 'osx-arm64'">..\..\bin\rclone-darwin-arm64</RcloneForMac>
+    <RcloneForMac Condition="'$(RuntimeIdentifier)' == 'osx-x64'">..\..\bin\rclone-darwin-amd64</RcloneForMac>
+  </PropertyGroup>
+  <ItemGroup Condition="!$(RuntimeIdentifier.StartsWith('osx')) And Exists('..\..\bin\rclone.exe')">
+    <None Include="..\..\bin\rclone.exe" Link="rclone.exe" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(RcloneForMac)' != '' And Exists('$(RcloneForMac)')">
+    <None Include="$(RcloneForMac)" Link="rclone" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia" Version="12.1.6" />
+    <PackageReference Include="Avalonia.Desktop" Version="12.1.6" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="12.1.6" />
+    <PackageReference Include="Avalonia.Fonts.Inter" Version="12.1.6" />
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ImagepixelDrive.Core\ImagepixelDrive.Core.csproj" />
+  </ItemGroup>
+</Project>

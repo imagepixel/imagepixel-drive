@@ -1,0 +1,13 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/ImagepixelDrive.App/ImagepixelDrive.App.csproj" />
+    <Project Path="src/ImagepixelDrive.Core/ImagepixelDrive.Core.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/ImagepixelDrive.App.Tests/ImagepixelDrive.App.Tests.csproj" />
+    <Project Path="tests/ImagepixelDrive.Core.Tests/ImagepixelDrive.Core.Tests.csproj" />
+  </Folder>
+  <Folder Name="/tools/">
+    <Project Path="tools/ImagepixelDrive.Prototype/ImagepixelDrive.Prototype.csproj" />
+  </Folder>
+</Solution>

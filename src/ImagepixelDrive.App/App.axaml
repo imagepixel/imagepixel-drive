@@ -1,0 +1,132 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="ImagepixelDrive.App.App"
+             xmlns:local="using:ImagepixelDrive.App"
+             Name="Imagepixel Drive"
+             RequestedThemeVariant="Default">
+
+    <Application.DataTemplates>
+        <local:ViewLocator />
+    </Application.DataTemplates>
+
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.ThemeDictionaries>
+                <ResourceDictionary x:Key="Light">
+                    <SolidColorBrush x:Key="PageBackgroundBrush" Color="#F6F4F8" />
+                    <SolidColorBrush x:Key="CardBackgroundBrush" Color="#FFFFFF" />
+                    <SolidColorBrush x:Key="CardBorderBrush" Color="#E4DFEA" />
+                    <SolidColorBrush x:Key="SubtleTextBrush" Color="#665F6E" />
+                    <SolidColorBrush x:Key="ProblemTextBrush" Color="#B3261E" />
+                    <SolidColorBrush x:Key="ProblemBackgroundBrush" Color="#FCEEED" />
+                    <SolidColorBrush x:Key="SuccessTextBrush" Color="#1B7F3B" />
+                    <SolidColorBrush x:Key="AccentBrush" Color="#8E24AA" />
+                    <SolidColorBrush x:Key="SelectedTileBackgroundBrush" Color="#F6EAF9" />
+                    <SolidColorBrush x:Key="WarningBackgroundBrush" Color="#FFF4DD" />
+                    <SolidColorBrush x:Key="WarningBorderBrush" Color="#E8B34B" />
+                </ResourceDictionary>
+                <ResourceDictionary x:Key="Dark">
+                    <SolidColorBrush x:Key="PageBackgroundBrush" Color="#1C1A1F" />
+                    <SolidColorBrush x:Key="CardBackgroundBrush" Color="#28252C" />
+                    <SolidColorBrush x:Key="CardBorderBrush" Color="#3A3640" />
+                    <SolidColorBrush x:Key="SubtleTextBrush" Color="#B4ADBC" />
+                    <SolidColorBrush x:Key="ProblemTextBrush" Color="#FFB4AB" />
+                    <SolidColorBrush x:Key="ProblemBackgroundBrush" Color="#4A2522" />
+                    <SolidColorBrush x:Key="SuccessTextBrush" Color="#7FD99A" />
+                    <SolidColorBrush x:Key="AccentBrush" Color="#C77DDB" />
+                    <SolidColorBrush x:Key="SelectedTileBackgroundBrush" Color="#3B2A42" />
+                    <SolidColorBrush x:Key="WarningBackgroundBrush" Color="#42361A" />
+                    <SolidColorBrush x:Key="WarningBorderBrush" Color="#B8892E" />
+                </ResourceDictionary>
+            </ResourceDictionary.ThemeDictionaries>
+        </ResourceDictionary>
+    </Application.Resources>
+
+    <Application.Styles>
+        <FluentTheme>
+            <FluentTheme.Palettes>
+                <ColorPaletteResources x:Key="Light" Accent="#8E24AA" />
+                <ColorPaletteResources x:Key="Dark" Accent="#C77DDB" />
+            </FluentTheme.Palettes>
+        </FluentTheme>
+
+        <Style Selector="Border.card">
+            <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Padding" Value="20" />
+        </Style>
+
+        <!-- large buttons to choose between a few options -->
+        <Style Selector="Button.tile">
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+            <Setter Property="VerticalAlignment" Value="Stretch" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="VerticalContentAlignment" Value="Top" />
+            <Setter Property="Padding" Value="14,12" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="BorderThickness" Value="2" />
+            <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}" />
+            <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}" />
+        </Style>
+        <Style Selector="Button.tile:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+        </Style>
+        <Style Selector="Button.tile.selected /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource SelectedTileBackgroundBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+        </Style>
+
+        <!-- a box that explains something, and one that warns -->
+        <Style Selector="Border.note">
+            <Setter Property="Background" Value="{DynamicResource PageBackgroundBrush}" />
+            <Setter Property="CornerRadius" Value="6" />
+            <Setter Property="Padding" Value="14,10" />
+        </Style>
+        <Style Selector="Border.warning">
+            <Setter Property="Background" Value="{DynamicResource WarningBackgroundBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource WarningBorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="6" />
+            <Setter Property="Padding" Value="14,10" />
+        </Style>
+
+        <Style Selector="ProgressBar.warning">
+            <Setter Property="Foreground" Value="{DynamicResource WarningBorderBrush}" />
+        </Style>
+
+        <!-- a small label that marks the recommended option -->
+        <Style Selector="Border.badge">
+            <Setter Property="Background" Value="{DynamicResource AccentBrush}" />
+            <Setter Property="CornerRadius" Value="10" />
+            <Setter Property="Padding" Value="9,2" />
+        </Style>
+        <Style Selector="Border.badge > TextBlock">
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+        </Style>
+
+        <Style Selector="TextBlock.title">
+            <Setter Property="FontSize" Value="22" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+        </Style>
+
+        <Style Selector="TextBlock.heading">
+            <Setter Property="FontSize" Value="16" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+        </Style>
+
+        <Style Selector="TextBlock.subtle">
+            <Setter Property="Foreground" Value="{DynamicResource SubtleTextBrush}" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+        </Style>
+
+        <Style Selector="TextBlock.label">
+            <Setter Property="FontWeight" Value="Medium" />
+            <Setter Property="Margin" Value="0,12,0,4" />
+        </Style>
+    </Application.Styles>
+</Application>
