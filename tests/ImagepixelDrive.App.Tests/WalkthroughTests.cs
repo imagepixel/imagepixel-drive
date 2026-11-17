@@ -181,13 +181,17 @@ public sealed class WalkthroughTests : IDisposable
         Assert.Same(dashboard, main.CurrentPage);
 
         // --- disconnecting forgets the drive, but deletes nothing --------------------------
-        dashboard.AskDisconnectCommand.Execute(null);
+        await dashboard.AskDisconnectCommand.ExecuteAsync(null);
         Assert.True(dashboard.ConfirmDisconnect);
+
+        // everything is stored, so there is nothing to warn about
+        Assert.False(dashboard.HasDisconnectWarning);
         Capture(window, "06-trennen");
         await dashboard.DisconnectCommand.ExecuteAsync(null);
         var again = Assert.IsType<SetupViewModel>(main.CurrentPage);
         Assert.False(manager.IsConnected);
         Assert.Null(secrets.Get(SecretNames.DrivePassword));
+        Assert.Null(secrets.Get(SecretNames.ObscuredDrivePassword));
         Assert.True(DriveManager.LooksLikeDrive(driveFolder));
 
         // --- opening it again, for example on another computer -----------------------------
@@ -369,6 +373,26 @@ public sealed class WalkthroughTests : IDisposable
         Assert.Empty(dashboard.OfflineFolders);
         Assert.True(File.Exists(Path.Combine(local, "Bleibt.txt")));
         Capture(window, "15-nicht-mehr-offline");
+
+        // --- disconnecting while a file is on its way: the question says what is at stake ---
+        // (the drive takes a new file without a connection in a folder whose list it knows)
+        await OnDrive(() => Directory.GetFileSystemEntries(drive));
+        link.Down();
+        await OnDrive(() =>
+        {
+            File.WriteAllText(Path.Combine(drive, "Spaet.txt"), "noch nicht gespeichert");
+            return true;
+        });
+        await Wait.UntilAsync(async () => await manager.PendingUploadsAsync() == 1, TimeSpan.FromSeconds(30), "the file waiting for its upload");
+        await dashboard.AskDisconnectCommand.ExecuteAsync(null);
+        Assert.True(dashboard.ConfirmDisconnect);
+        Assert.Equal(Texts.DisconnectLoses(1), dashboard.DisconnectWarning);
+        Capture(window, "15a-trennen-mit-wartender-datei");
+        dashboard.CancelDisconnectCommand.Execute(null);
+        Assert.False(dashboard.ConfirmDisconnect);
+        link.Up();
+        await Wait.UntilAsync(
+            async () => await manager.PendingUploadsAsync() == 0, TimeSpan.FromSeconds(120), "the upload after the connection came back");
 
         // --- the info page turns starting at login off and on ------------------------------
         dashboard.ShowAboutCommand.Execute(null);

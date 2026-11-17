@@ -26,6 +26,8 @@
                     <TextBlock FontWeight="SemiBold" Text="Laufwerk von diesem Rechner trennen?" />
                     <TextBlock TextWrapping="Wrap"
                                Text="Das Programm vergisst dann Speicherort und Passwort. Gelöscht wird nichts: Das Laufwerk bleibt, wo es gespeichert ist, und deine Offline-Ordner bleiben als gewöhnliche Ordner auf diesem Rechner. Warte vorher, bis alles gespeichert ist." />
+                    <TextBlock TextWrapping="Wrap" FontWeight="SemiBold" Text="{Binding DisconnectWarning}"
+                               IsVisible="{Binding HasDisconnectWarning}" />
                     <StackPanel Orientation="Horizontal" Spacing="8">
                         <Button Content="Trennen" Command="{Binding DisconnectCommand}" />
                         <Button Content="Abbrechen" Command="{Binding CancelDisconnectCommand}" />

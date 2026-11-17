@@ -18,6 +18,13 @@ public interface ISecretStore
 public static class SecretNames
 {
     public const string DrivePassword = "drive-password";
+
+    /// <summary>
+    /// The password as rclone wrote it down when the drive was set up, see
+    /// <see cref="DriveAccess.ObscuredPassword"/>.
+    /// </summary>
+    public const string ObscuredDrivePassword = "drive-password-obscured";
+
     public const string SecretAccessKey = "secret-access-key";
     public const string ApiToken = "api-token";
 }

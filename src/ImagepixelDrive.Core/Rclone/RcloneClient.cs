@@ -118,6 +118,13 @@ public sealed class RcloneClient
         return new RcloneClient(rclonePath, new DriveAccess(storage, result.Output.Trim()));
     }
 
+    /// <summary>
+    /// Prepares access to a drive with the password as rclone wrote it down at an
+    /// earlier time, see <see cref="DriveAccess.ObscuredPassword"/>.
+    /// </summary>
+    internal static RcloneClient Create(string rclonePath, DriveStorage storage, string obscuredPassword) =>
+        new(rclonePath, new DriveAccess(storage, obscuredPassword));
+
     /// <summary>Tells whether there is a drive at the place and whether the password opens it.</summary>
     public async Task<DriveState> ProbeAsync(CancellationToken cancellationToken = default)
     {

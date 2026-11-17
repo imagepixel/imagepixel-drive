@@ -230,6 +230,7 @@ public sealed partial class DriveManager : IAsyncDisposable
         Config.OfflineFolders = [];
         _store.Save(Config);
         _secrets.Set(SecretNames.DrivePassword, password);
+        _secrets.Set(SecretNames.ObscuredDrivePassword, client.Access.ObscuredPassword);
         _secrets.Set(SecretNames.SecretAccessKey, storage.IsImagepixel ? secretAccessKey : null);
         _secrets.Set(SecretNames.ApiToken, storage.IsImagepixel ? apiToken : null);
         return state;
@@ -247,15 +248,24 @@ public sealed partial class DriveManager : IAsyncDisposable
     }
 
     /// <summary>
-    /// Forgets the drive on this computer. Nothing is deleted: the drive stays where it
-    /// is stored, and the offline folders stay as ordinary folders.
+    /// Forgets the drive on this computer. Nothing stored is deleted: the drive stays
+    /// where it is stored, and the offline folders stay as ordinary folders. What the
+    /// drive kept on this computer for files on their way is removed, because those
+    /// are copies that are not encrypted; a file that has not reached the storage by
+    /// then is lost.
     /// </summary>
     public async Task DisconnectAsync()
     {
+        var storage = Config.Storage;
         await StopAsync();
         foreach (var folder in Config.OfflineFolders)
         {
             ForgetSync(folder);
+        }
+
+        if (storage is not null)
+        {
+            await ForgetCacheAsync(storage.ToStorage(null));
         }
 
         _client = null;
@@ -263,6 +273,7 @@ public sealed partial class DriveManager : IAsyncDisposable
         Config.OfflineFolders = [];
         _store.Save(Config);
         _secrets.Set(SecretNames.DrivePassword, null);
+        _secrets.Set(SecretNames.ObscuredDrivePassword, null);
         _secrets.Set(SecretNames.SecretAccessKey, null);
         _secrets.Set(SecretNames.ApiToken, null);
         Changed?.Invoke();
@@ -302,7 +313,7 @@ public sealed partial class DriveManager : IAsyncDisposable
 
                 var options = DriveMountOptions.For(
                     client.Access.Storage,
-                    Path.Combine(_dataDirectory, "cache", client.Access.Storage.Id),
+                    CacheDirectory(client.Access.Storage),
                     Path.Combine(_dataDirectory, "logs", "drive.log"));
 
                 // a place that turns out to be taken is no reason to give up: the next one is tried
@@ -535,10 +546,43 @@ public sealed partial class DriveManager : IAsyncDisposable
             return _client;
         }
 
-        var storage = Config.Storage ?? throw new InvalidOperationException("No drive is set up.");
+        var settings = Config.Storage ?? throw new InvalidOperationException("No drive is set up.");
         var password = _secrets.Get(SecretNames.DrivePassword) ?? throw new InvalidOperationException("The password of the drive is not known.");
-        return _client = await RcloneClient.CreateAsync(
-            _rclonePath, storage.ToStorage(_secrets.Get(SecretNames.SecretAccessKey)), password, cancellationToken);
+        var storage = settings.ToStorage(_secrets.Get(SecretNames.SecretAccessKey));
+
+        // The drive is given the text rclone knows it by since it was set up, so that
+        // rclone finds the files again that were on their way when it ended.
+        if (_secrets.Get(SecretNames.ObscuredDrivePassword) is { Length: > 0 } obscured)
+        {
+            return _client = RcloneClient.Create(_rclonePath, storage, obscured);
+        }
+
+        var client = await RcloneClient.CreateAsync(_rclonePath, storage, password, cancellationToken);
+        _secrets.Set(SecretNames.ObscuredDrivePassword, client.Access.ObscuredPassword);
+        return _client = client;
+    }
+
+    /// <summary>
+    /// The folder rclone keeps files of a drive in while they are on their way to the
+    /// storage. They lie there as they are, not encrypted.
+    /// </summary>
+    private string CacheDirectory(DriveStorage storage) => Path.Combine(_dataDirectory, "cache", storage.Id);
+
+    private async Task ForgetCacheAsync(DriveStorage storage)
+    {
+        var cache = CacheDirectory(storage);
+        for (var attempt = 0; attempt < 5 && Directory.Exists(cache); attempt++)
+        {
+            try
+            {
+                Directory.Delete(cache, recursive: true);
+            }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+            {
+                // rclone has just ended and the system is still letting go of a file
+                await Task.Delay(300);
+            }
+        }
     }
 
     private void StartKeeper(RcloneClient client, OfflineFolderSettings settings)

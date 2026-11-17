@@ -118,6 +118,13 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
     [ObservableProperty]
     public partial bool ConfirmDisconnect { get; set; }
 
+    /// <summary>Tells, in that question, that files are not stored yet and would be lost.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasDisconnectWarning))]
+    public partial string? DisconnectWarning { get; set; }
+
+    public bool HasDisconnectWarning => !string.IsNullOrEmpty(DisconnectWarning);
+
     /// <summary>Shows the drive and starts looking after the offline folders.</summary>
     public async Task StartAsync()
     {
@@ -248,7 +255,14 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
     private void ShowAbout() => _main.ShowAbout();
 
     [RelayCommand]
-    private void AskDisconnect() => ConfirmDisconnect = true;
+    private async Task AskDisconnectAsync()
+    {
+        // disconnecting removes the files that are still on their way
+        var pending = await _manager.PendingUploadsAsync();
+        UploadStatus = IsRunning ? Texts.PendingUploads(pending) : "";
+        DisconnectWarning = pending > 0 ? Texts.DisconnectLoses(pending) : null;
+        ConfirmDisconnect = true;
+    }
 
     [RelayCommand]
     private void CancelDisconnect() => ConfirmDisconnect = false;

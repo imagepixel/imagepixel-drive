@@ -96,6 +96,11 @@ public static class Texts
         _ => $"{count} Dateien werden noch gespeichert …",
     };
 
+    /// <summary>Said before a drive is disconnected while files are still on their way.</summary>
+    public static string DisconnectLoses(int count) => count == 1
+        ? "1 Datei ist noch nicht gespeichert. Was beim Trennen noch nicht gespeichert ist, geht verloren."
+        : $"{count} Dateien sind noch nicht gespeichert. Was beim Trennen noch nicht gespeichert ist, geht verloren.";
+
     /// <summary>What starting at login means on this system.</summary>
     public static string StartAtLoginHint =>
         $"Damit dein Laufwerk ohne dein Zutun da ist, kann das Programm bei jeder Anmeldung starten. Es wartet dann {TrayPlace}.";

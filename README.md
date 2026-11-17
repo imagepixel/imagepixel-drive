@@ -91,7 +91,11 @@ application in daily work.
 The **Windows** version has a setup program. Its tests show a real drive and run real
 syncs, including a lost connection. Drive and offline folders were also tried against
 a bucket of Imagepixel Storage, with the program for the command line. The setup
-program itself has been built but not run yet.
+program was run on one computer with Windows 11, and the installed application was
+walked through there: setting up a drive in a folder, writing and reading files,
+starting in the background, ending it abruptly, disconnecting. The step of the setup
+program that installs WinFsp did not run, because WinFsp was on that computer
+already, and removing the application was not tried.
 
 The **macOS** version is a **beta**. It shows the drive through the NFS client that is
 part of macOS, so nothing has to be installed and no kernel extension is involved. It
@@ -217,6 +221,13 @@ without changes.
 | Drive on Windows | `rclone mount` through [WinFsp](https://winfsp.dev) |
 | Drive on macOS | `rclone nfsmount` through the NFS client of macOS, with the mount options `locallocks`, `nonegnamecache` and `actimeo=3` |
 | Offline folders | `rclone bisync` between a folder on the computer and the folder in the drive |
+
+Files you save or open on the drive pass through a cache folder in your user profile.
+They lie there as they are, not encrypted, like any other file on your computer.
+rclone stores a file a few seconds after it was closed. If the application or the
+computer stops before that, the file waits in the cache folder and is stored when the
+drive is shown the next time. Disconnecting a drive removes its cache folder, with
+the files that have not been stored by then; the application says so if there are any.
 
 Both sides of an offline folder carry a small file named `.imagepixel-offline`; a
 sync only runs while both have it. The password and the access key are kept with the

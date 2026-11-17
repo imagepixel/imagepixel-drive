@@ -10,15 +10,27 @@ public sealed class DriveAccess
     /// <summary>The name rclone knows the drive by: the storage with the encryption on top.</summary>
     internal const string DriveRemote = "ipdrive";
 
-    private readonly string _obscuredPassword;
-
     internal DriveAccess(DriveStorage storage, string obscuredPassword)
     {
         Storage = storage;
-        _obscuredPassword = obscuredPassword;
+        ObscuredPassword = obscuredPassword;
     }
 
     public DriveStorage Storage { get; }
+
+    /// <summary>
+    /// The password in the reversible notation of rclone. It is as secret as the
+    /// password itself.
+    /// </summary>
+    /// <remarks>
+    /// rclone writes the same password differently every time it is asked, and it
+    /// names the cache folder of a drive after everything it is told about the drive
+    /// through its environment, this text included. A drive that is shown again must
+    /// therefore be given the very text it was given before. Otherwise rclone starts
+    /// with an empty cache, and files that were written but not stored yet when the
+    /// drive was closed stay behind in the old one.
+    /// </remarks>
+    internal string ObscuredPassword { get; }
 
     /// <summary>
     /// A path in the drive in the notation of rclone. Paths use forward slashes and
@@ -51,7 +63,7 @@ public sealed class DriveAccess
         const string Key = "RCLONE_CONFIG_IPDRIVE_";
         environment[Key + "TYPE"] = "crypt";
         environment[Key + "REMOTE"] = Storage.Location;
-        environment[Key + "PASSWORD"] = _obscuredPassword;
+        environment[Key + "PASSWORD"] = ObscuredPassword;
 
         // give up quickly when the storage cannot be reached instead of leaving the
         // user waiting; whoever started rclone tries again later

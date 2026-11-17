@@ -95,6 +95,48 @@ public class DriveManagerTests
     }
 
     [SkippableFact]
+    public async Task What_was_not_stored_when_the_drive_closed_is_stored_at_the_next_start()
+    {
+        Skip.IfNot(DriveMount.IsSupported, "This computer cannot show a drive.");
+        var root = TestDrive.NewRoot();
+        var folder = Path.Combine(root, "Speicher", DriveManager.DriveFolderName);
+        var cache = Path.Combine(root, "data", "cache");
+        var secrets = new MemorySecretStore();
+        string[] Stored() => Directory.GetFiles(folder, "*", SearchOption.AllDirectories);
+
+        await using (var manager = NewManager(root, secrets))
+        {
+            Assert.Equal(DriveState.Ready, await manager.ConnectAsync(InFolder(folder), Password, null, createIfMissing: true));
+            await manager.StartAsync();
+            Assert.True(manager.Phase == DrivePhase.Running, manager.Problem?.Message);
+            var before = Stored().Length;
+
+            // rclone stores a file a few seconds after it was closed. The drive goes
+            // away before that, as it does when the computer is switched off.
+            File.WriteAllText(Path.Combine(manager.Mount!.RootPath, "Bericht.txt"), "kurz vor dem Ende geschrieben");
+            await manager.Mount.StopAsync(waitForUploads: TimeSpan.Zero);
+            Assert.Equal(before, Stored().Length);
+        }
+
+        // the next start of the application: rclone finds the file and stores it
+        await using var next = NewManager(root, secrets);
+        var stored = Stored().Length;
+        await next.StartAsync();
+        Assert.True(next.Phase == DrivePhase.Running, next.Problem?.Message);
+        await Wait.UntilAsync(() => Stored().Length == stored + 1, TimeSpan.FromSeconds(60), "the file that was on its way");
+        Assert.Equal("kurz vor dem Ende geschrieben", File.ReadAllText(Path.Combine(next.Mount!.RootPath, "Bericht.txt")));
+
+        // every start used the same cache, where the file lies as it is
+        Assert.Single(Directory.GetDirectories(Path.Combine(Assert.Single(Directory.GetDirectories(cache)), "vfs")));
+
+        // disconnecting leaves no copy on this computer that is not encrypted
+        await next.DisconnectAsync();
+        Assert.Empty(Directory.Exists(cache) ? Directory.GetFiles(cache, "*", SearchOption.AllDirectories) : []);
+        Assert.Null(secrets.Get(SecretNames.ObscuredDrivePassword));
+        Assert.Equal(stored + 1, Stored().Length);
+    }
+
+    [SkippableFact]
     public async Task Manager_shows_the_drive_and_keeps_a_chosen_folder_offline()
     {
         Skip.IfNot(DriveMount.IsSupported, "This computer cannot show a drive.");
