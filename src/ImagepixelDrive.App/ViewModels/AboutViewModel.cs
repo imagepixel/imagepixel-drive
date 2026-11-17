@@ -1,4 +1,5 @@
 using System;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
 namespace ImagepixelDrive.App.ViewModels;
@@ -19,6 +20,7 @@ public partial class AboutViewModel : ViewModelBase
     {
         _main = main;
         _previous = previous;
+        StartAtLogin = main.LoginItem is { IsEnabled: true };
     }
 
     public string Version { get; } =
@@ -27,8 +29,52 @@ public partial class AboutViewModel : ViewModelBase
     /// <summary>WinFsp is only part of the application where it shows the drive.</summary>
     public bool ShowWinFsp => OperatingSystem.IsWindows();
 
+    /// <summary>
+    /// On macOS the application itself registers to start at login. On Windows the
+    /// setup program offers this, so there is nothing to choose here.
+    /// </summary>
+    public bool ShowStartAtLogin => _main.LoginItem is not null;
+
+    [ObservableProperty]
+    public partial bool StartAtLogin { get; set; }
+
+    /// <summary>What keeps the application from starting at login, if anything.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasStartAtLoginProblem))]
+    public partial string? StartAtLoginProblem { get; set; }
+
+    public bool HasStartAtLoginProblem => StartAtLoginProblem is not null;
+
+    partial void OnStartAtLoginChanged(bool value)
+    {
+        if (_main.LoginItem is not { } loginItem || value == loginItem.IsEnabled)
+        {
+            return;
+        }
+
+        if (value)
+        {
+            StartAtLoginProblem = _main.EnableStartAtLogin();
+            if (StartAtLoginProblem is not null)
+            {
+                // once the box has taken the click, it is cleared again
+                Avalonia.Threading.Dispatcher.UIThread.Post(() => StartAtLogin = false);
+            }
+        }
+        else
+        {
+            loginItem.Disable();
+            StartAtLoginProblem = null;
+        }
+    }
+
     [RelayCommand]
-    private void Back() => _main.CurrentPage = _previous;
+    private void Back()
+    {
+        // the overview tells whether the application starts at login, which may have changed here
+        (_previous as DashboardViewModel)?.RefreshStartAtLogin();
+        _main.CurrentPage = _previous;
+    }
 
     [RelayCommand]
     private void OpenLink(string url) => _main.OpenInFileManager(url);

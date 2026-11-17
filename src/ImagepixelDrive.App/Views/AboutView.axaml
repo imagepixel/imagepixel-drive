@@ -22,6 +22,18 @@
                 <TextBlock Text="{x:Static local:Texts.PreviewNote}" TextWrapping="Wrap" />
             </Border>
 
+            <!-- macOS: the application registers itself to start at login -->
+            <Border Classes="card" IsVisible="{Binding ShowStartAtLogin}">
+                <StackPanel Spacing="8">
+                    <TextBlock Classes="heading" Text="Automatisch starten" />
+                    <TextBlock Classes="subtle" Text="{x:Static local:Texts.StartAtLoginHint}" />
+                    <CheckBox Content="Bei der Anmeldung automatisch starten" IsChecked="{Binding StartAtLogin}" />
+                    <Border Classes="warning" IsVisible="{Binding HasStartAtLoginProblem}">
+                        <TextBlock Text="{Binding StartAtLoginProblem}" TextWrapping="Wrap" />
+                    </Border>
+                </StackPanel>
+            </Border>
+
             <Border Classes="card">
                 <StackPanel Spacing="8">
                     <TextBlock Classes="heading" Text="Nutzungshinweise" />

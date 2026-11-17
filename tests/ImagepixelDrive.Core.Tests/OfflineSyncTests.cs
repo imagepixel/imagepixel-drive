@@ -65,6 +65,40 @@ public class OfflineSyncTests
     }
 
     [SkippableFact]
+    public async Task What_macOS_writes_into_every_folder_stays_where_it_is()
+    {
+        using var drive = await TestDrive.CreateAsync();
+        await drive.PutAsync("Projekte/Plan.txt", "aus dem Speicher");
+        await drive.PutAsync("Projekte/._Plan.txt", "Merkmale, im Laufwerk abgelegt");
+        await drive.PutAsync("Projekte/.DS_Store", "Notizen des Finders im Laufwerk");
+        var sync = NewSync(drive);
+        var local = sync.Folder.LocalPath;
+        TestDrive.Write(Path.Combine(local, ".DS_Store"), "Notizen des Finders auf diesem Geraet");
+        TestDrive.Write(Path.Combine(local, "Unter", "._Bild.txt"), "Merkmale auf diesem Geraet");
+
+        TestDrive.AssertOutcome(SyncOutcome.Synced, await sync.RunAsync());
+
+        Assert.Equal([".DS_Store", OfflineSync.MarkerName, "Plan.txt", "Unter/._Bild.txt"], TestDrive.LocalFiles(local));
+        Assert.Equal([".DS_Store", "._Plan.txt", OfflineSync.MarkerName, "Plan.txt"], await drive.FilesAsync("Projekte"));
+        Assert.Equal("Notizen des Finders auf diesem Geraet", File.ReadAllText(Path.Combine(local, ".DS_Store")));
+
+        // both sides change theirs: nothing to carry over, and no conflict
+        TestDrive.Write(Path.Combine(local, ".DS_Store"), "neue Notizen auf diesem Geraet");
+        await drive.PutAsync("Projekte/.DS_Store", "neue Notizen im Laufwerk");
+        var result = await sync.RunAsync();
+
+        TestDrive.AssertOutcome(SyncOutcome.Synced, result);
+        Assert.False(result.ChangedStorage);
+        Assert.Empty(result.Conflicts);
+        Assert.Equal("neue Notizen im Laufwerk", await drive.Client.ReadTextAsync("Projekte/.DS_Store"));
+
+        Assert.True(OfflineSync.IsLeftOut(".DS_Store"));
+        Assert.True(OfflineSync.IsLeftOut("._Plan.txt"));
+        Assert.False(OfflineSync.IsLeftOut("Plan.txt"));
+        Assert.False(OfflineSync.IsLeftOut(OfflineSync.MarkerName));
+    }
+
+    [SkippableFact]
     public async Task Deletions_travel_in_both_directions()
     {
         using var drive = await TestDrive.CreateAsync();

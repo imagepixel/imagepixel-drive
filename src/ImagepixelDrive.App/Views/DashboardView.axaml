@@ -33,6 +33,19 @@
                 </StackPanel>
             </Border>
 
+            <!-- macOS: nothing starts the application at login until the user agrees -->
+            <Border Classes="warning" IsVisible="{Binding ShowStartAtLoginNote}">
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="14">
+                    <TextBlock VerticalAlignment="Center" TextWrapping="Wrap"
+                               Text="{x:Static local:Texts.StartAtLoginNote}" />
+                    <Button Grid.Column="1" Content="Automatisch starten" VerticalAlignment="Center"
+                            Command="{Binding StartAtLoginCommand}" />
+                </Grid>
+            </Border>
+            <Border Classes="note" IsVisible="{Binding HasNotice}">
+                <TextBlock Text="{Binding Notice}" TextWrapping="Wrap" />
+            </Border>
+
             <!-- the drive -->
             <Border Classes="card">
                 <StackPanel Spacing="8">
@@ -57,6 +70,23 @@
 
                     <TextBlock Classes="subtle" Margin="0,4,0,0"
                                Text="Alles, was du auf dem Laufwerk ablegst, wird auf diesem Rechner verschlüsselt, bevor es ihn verlässt." />
+                </StackPanel>
+            </Border>
+
+            <!-- Imagepixel Storage: how much of the booked storage is used -->
+            <Border Classes="card" IsVisible="{Binding HasStorageStatus}">
+                <StackPanel Spacing="8">
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                        <TextBlock Classes="heading" Text="Dein Speicher bei Imagepixel" />
+                        <TextBlock Grid.Column="1" Classes="subtle" Text="{Binding StorageDetail}" TextWrapping="NoWrap"
+                                   VerticalAlignment="Center" />
+                    </Grid>
+                    <ProgressBar Minimum="0" Maximum="100" Value="{Binding StoragePercent}"
+                                 Classes.warning="{Binding HasStorageWarning}" />
+                    <TextBlock Text="{Binding StorageText}" />
+                    <Border Classes="warning" IsVisible="{Binding HasStorageWarning}">
+                        <TextBlock Text="{Binding StorageWarning}" TextWrapping="Wrap" />
+                    </Border>
                 </StackPanel>
             </Border>
 

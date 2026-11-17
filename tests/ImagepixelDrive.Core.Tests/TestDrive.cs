@@ -109,6 +109,40 @@ internal sealed class TestDrive : IDisposable
             .Select(f => Path.GetRelativePath(folder, f).Replace('\\', '/'))
             .Order(StringComparer.Ordinal)];
 
+    /// <summary>
+    /// A free drive letter of Windows, counted from the end of the order the
+    /// application prefers them in; null if there are not that many. Tests that show a
+    /// drive run at the same time, and the application itself takes the first letter,
+    /// so every test class takes one of its own from the other end.
+    /// </summary>
+    public static string? DriveLetterFromEnd(int position)
+    {
+        var letters = DriveMount.FreeDriveLetters();
+        return letters.Count >= position ? letters[^position] : null;
+    }
+
+    /// <summary>Runs a program of the system to its end and returns its exit code and what it printed.</summary>
+    public static (int ExitCode, string Output) Run(string program, params string[] arguments)
+    {
+        var startInfo = new System.Diagnostics.ProcessStartInfo(program)
+        {
+            UseShellExecute = false,
+            CreateNoWindow = true,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+        };
+        foreach (var argument in arguments)
+        {
+            startInfo.ArgumentList.Add(argument);
+        }
+
+        using var process = System.Diagnostics.Process.Start(startInfo)!;
+        var errors = process.StandardError.ReadToEndAsync();
+        var output = process.StandardOutput.ReadToEnd();
+        process.WaitForExit();
+        return (process.ExitCode, output + errors.GetAwaiter().GetResult());
+    }
+
     /// <summary>Fails the test with what rclone reported if a sync did not end as expected.</summary>
     public static void AssertOutcome(SyncOutcome expected, SyncResult result) =>
         Assert.True(expected == result.Outcome, $"Expected {expected}, got {result.Outcome}:{Environment.NewLine}{string.Join(Environment.NewLine, result.Errors)}");

@@ -111,6 +111,14 @@ public sealed partial class OfflineSync
     /// <summary>What a file gets added to its name when it lost a conflict: "Plan.Konflikt1.txt".</summary>
     public const string ConflictSuffix = "Konflikt";
 
+    /// <summary>
+    /// Files the sync leaves where they are, in the notation of rclone: the notes the
+    /// Finder of macOS keeps about a folder, and the companion files macOS stores
+    /// extended attributes in on a drive. macOS writes them on both sides by itself,
+    /// so they would be reported as changed on both sides again and again.
+    /// </summary>
+    private static readonly string[] LeftOut = [".DS_Store", "._*"];
+
     private const string MarkerContent = "Imagepixel Drive\n";
     private const int ExitCritical = 7;
 
@@ -144,6 +152,10 @@ public sealed partial class OfflineSync
     /// <summary>Whether both sides have been brought together before.</summary>
     public bool IsInitialized =>
         Directory.Exists(_stateDirectory) && Directory.EnumerateFiles(_stateDirectory, "*.lst").Any();
+
+    /// <summary>Whether the sync leaves a file with this name where it is, see <see cref="LeftOut"/>.</summary>
+    public static bool IsLeftOut(string? fileName) =>
+        fileName is ".DS_Store" || fileName?.StartsWith("._", StringComparison.Ordinal) == true;
 
     /// <summary>A name for the state directory of a pair of folders that stays the same between runs.</summary>
     public static string StateName(OfflineFolder folder)
@@ -234,6 +246,7 @@ public sealed partial class OfflineSync
             "--compare", "size,modtime",
             "-v",
         ];
+        arguments.AddRange(LeftOut.SelectMany(pattern => new[] { "--exclude", pattern }));
         if (firstRun || mode == SyncMode.Repair)
         {
             arguments.AddRange(["--resync-mode", "newer"]);

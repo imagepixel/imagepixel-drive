@@ -62,6 +62,7 @@ public sealed partial class DriveManager : IAsyncDisposable
     private readonly string _dataDirectory;
     private readonly List<OfflineKeeper> _keepers = [];
     private readonly SemaphoreSlim _gate = new(1, 1);
+    private readonly StorageStatusService _storageStatus;
     private RcloneClient? _client;
 
     /// <param name="store">Where the settings are kept.</param>
@@ -71,20 +72,29 @@ public sealed partial class DriveManager : IAsyncDisposable
     /// A folder on this computer for files on their way and the records of the syncs.
     /// </param>
     /// <param name="offlineRoot">The folder that receives the offline folders.</param>
+    /// <param name="http">
+    /// Reaches the service of Imagepixel that tells how much storage is booked and used.
+    /// The tests pass one that answers by itself.
+    /// </param>
     public DriveManager(
         ConfigStore store,
         ISecretStore secrets,
         string rclonePath,
         string? dataDirectory = null,
-        string? offlineRoot = null)
+        string? offlineRoot = null,
+        HttpClient? http = null)
     {
         _store = store;
         _secrets = secrets;
         _rclonePath = rclonePath;
         _dataDirectory = dataDirectory ?? DefaultDataDirectory;
         OfflineRoot = offlineRoot ?? DefaultOfflineRoot;
+        _storageStatus = new StorageStatusService(http ?? SharedHttp.Value);
         Config = store.Load();
     }
+
+    // one for the whole application, as its makers recommend
+    private static readonly Lazy<HttpClient> SharedHttp = new(() => new HttpClient());
 
     /// <summary>The folder for what the application keeps on this computer besides its settings.</summary>
     public static string DefaultDataDirectory =>
@@ -385,6 +395,37 @@ public sealed partial class DriveManager : IAsyncDisposable
     /// <summary>Whether the storage answers at the moment.</summary>
     public async Task<bool> IsReachableAsync(CancellationToken cancellationToken = default) =>
         Config.Storage is not null && await (await ClientAsync(cancellationToken)).IsReachableAsync(cancellationToken);
+
+    /// <summary>
+    /// How much storage is booked at Imagepixel and how much of it is used. Null when
+    /// there are no figures, which is always the case for a place of the customer's own.
+    /// </summary>
+    public async Task<StorageStatus?> GetStorageStatusAsync(CancellationToken cancellationToken = default)
+    {
+        if (Config.Storage is not { IsImagepixel: true } storage)
+        {
+            return null;
+        }
+
+        var client = await ClientAsync(cancellationToken);
+        var result = await _storageStatus.GetAsync(
+            storage.ApiUrl,
+            _secrets.Get(SecretNames.ApiToken),
+            token => client.ReadBucketTextAsync(StorageStatusDocument.ObjectKey, token),
+            cancellationToken);
+
+        // The status file can announce the service. From then on the service is asked first.
+        if (result.ApiUrl is { } apiUrl && result.ApiToken is { } apiToken
+            && ReferenceEquals(Config.Storage, storage)
+            && (apiUrl != storage.ApiUrl || apiToken != _secrets.Get(SecretNames.ApiToken)))
+        {
+            storage.ApiUrl = apiUrl;
+            _secrets.Set(SecretNames.ApiToken, apiToken);
+            _store.Save(Config);
+        }
+
+        return result.Status;
+    }
 
     /// <summary>
     /// Turns a folder the user picked on the drive into its path in the drive. Throws

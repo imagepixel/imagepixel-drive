@@ -19,6 +19,7 @@ public partial class MainViewModel : ViewModelBase
     public MainViewModel(DriveManager manager, IReadOnlyList<CloudFolder>? cloudFolders = null)
     {
         _manager = manager;
+        LoadStorageStatus = () => manager.GetStorageStatusAsync();
         CloudFolders = cloudFolders ?? CloudFolderDetector.Detect();
 
         // the notes on use and liability come first, once
@@ -42,6 +43,58 @@ public partial class MainViewModel : ViewModelBase
     /// <summary>Opens a folder, a drive or a web page. Replaceable for tests.</summary>
     public Action<string> OpenInFileManager { get; set; } = path =>
         System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(path) { UseShellExecute = true });
+
+    /// <summary>Finds out how much storage is booked and used. Replaceable for tests.</summary>
+    public Func<Task<StorageStatus?>> LoadStorageStatus { get; set; }
+
+    /// <summary>
+    /// Starts the application when the user logs in. macOS has this; on Windows the
+    /// setup program takes care of it. Replaceable for tests.
+    /// </summary>
+    public ILoginItem? LoginItem { get; set; } = Core.LoginItem.Create();
+
+    /// <summary>The program to start at login. Replaceable for tests.</summary>
+    public Func<string?> ExecutablePath { get; set; } = () => Environment.ProcessPath;
+
+    /// <summary>Turns starting at login on. Returns what keeps it from working, or null.</summary>
+    public string? EnableStartAtLogin()
+    {
+        if (LoginItem is null || ExecutablePath() is not { Length: > 0 } executable)
+        {
+            return "Das automatische Starten lässt sich auf diesem Rechner nicht einrichten.";
+        }
+
+        if (!LoginItem.IsPermanentLocation(executable))
+        {
+            return Texts.MoveToApplications;
+        }
+
+        try
+        {
+            LoginItem.Enable(executable, Program.MinimizedArgument);
+            return null;
+        }
+        catch (Exception e) when (e is System.IO.IOException or UnauthorizedAccessException)
+        {
+            return "Das automatische Starten konnte nicht eingerichtet werden: " + e.Message;
+        }
+    }
+
+    /// <summary>Keeps starting at login working after the application was moved.</summary>
+    public void RefreshStartAtLogin()
+    {
+        try
+        {
+            if (LoginItem is not null && ExecutablePath() is { Length: > 0 } executable)
+            {
+                LoginItem.Refresh(executable, Program.MinimizedArgument);
+            }
+        }
+        catch (Exception e) when (e is System.IO.IOException or UnauthorizedAccessException)
+        {
+            // starting at login is a convenience, the application itself still works
+        }
+    }
 
     public DashboardViewModel Dashboard => _dashboard ??= new DashboardViewModel(_manager, this);
 

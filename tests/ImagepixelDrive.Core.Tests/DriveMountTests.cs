@@ -99,6 +99,64 @@ public class DriveMountTests
     }
 
     [SkippableFact]
+    public async Task What_another_computer_stores_shows_up_on_the_drive()
+    {
+        var letter = RequireDriveLetter();
+        var rclone = TestDrive.RequireRclone();
+        var root = TestDrive.NewRoot();
+        using var server = await S3TestServer.StartAsync(rclone, Path.Combine(root, "s3"), "bucket");
+        var storage = new S3Storage(
+            $"http://127.0.0.1:{server.Port}", "us-east-1", "bucket", "drive", S3TestServer.AccessKey, S3TestServer.Secret, "Rclone");
+        using var drive = await TestDrive.CreateAsync(root, storage);
+        await drive.Client.InitializeAsync();
+        await drive.PutAsync("Projekte/Plan.txt", "aus dem Speicher");
+
+        await using var mount = await DriveMount.StartAsync(drive.Client, letter, new DriveMountOptions(drive.PathOf("cache")));
+        var folder = Path.Combine(mount.RootPath, "Projekte");
+
+        // The drive is asked for a file before it exists and has shown the list of
+        // its folder. A storage made of buckets has no time to tell that a folder
+        // changed, so the system must not hold on to either answer.
+        Assert.False(File.Exists(Path.Combine(folder, "Neu.txt")));
+        Assert.Equal(["Plan.txt"], Directory.GetFiles(folder).Select(Path.GetFileName));
+
+        await drive.PutAsync("Projekte/Neu.txt", "von einem anderen Geraet");
+        await mount.RefreshAsync("Projekte");
+
+        // by its name the file is there at once, in the list of its folder a moment later
+        Assert.Equal("von einem anderen Geraet", File.ReadAllText(Path.Combine(folder, "Neu.txt")));
+        await Wait.UntilAsync(
+            () => Directory.GetFiles(folder).Length == 2, TimeSpan.FromSeconds(20), "the new file in the list of its folder");
+    }
+
+    [SkippableFact]
+    public async Task Files_are_copied_to_the_drive_with_their_extended_attributes()
+    {
+        Skip.IfNot(OperatingSystem.IsMacOS(), "Extended attributes are a matter of macOS.");
+        var letter = RequireDriveLetter();
+        using var drive = await TestDrive.CreateAsync();
+        await drive.Client.InitializeAsync();
+        await using var mount = await DriveMount.StartAsync(drive.Client, letter, new DriveMountOptions(drive.PathOf("cache")));
+
+        // a file that carries an attribute, as every file does that a browser has downloaded
+        var source = drive.PathOf("Geladen.txt");
+        File.WriteAllText(source, "aus dem Netz");
+        var marked = TestDrive.Run("/usr/bin/xattr", "-w", "de.imagepixel.test", "ein Merkmal", source);
+        Assert.True(marked.ExitCode == 0, marked.Output);
+
+        // copied the way the programs of macOS do it: with the attributes, or not at all
+        var copy = Path.Combine(mount.RootPath, "Geladen.txt");
+        var copied = TestDrive.Run("/usr/bin/ditto", source, copy);
+        Assert.True(copied.ExitCode == 0, copied.Output);
+        Assert.Equal("aus dem Netz", File.ReadAllText(copy));
+        Assert.Contains("ein Merkmal", TestDrive.Run("/usr/bin/xattr", "-p", "de.imagepixel.test", copy).Output);
+
+        // an attribute can also be set on a file that lies on the drive already
+        var set = TestDrive.Run("/usr/bin/xattr", "-w", "de.imagepixel.test", "noch eins", Path.Combine(mount.RootPath, RcloneClient.CheckFileName));
+        Assert.True(set.ExitCode == 0, set.Output);
+    }
+
+    [SkippableFact]
     public async Task Drive_and_offline_folder_show_the_same_files()
     {
         var letter = RequireDriveLetter();

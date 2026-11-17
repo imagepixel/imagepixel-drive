@@ -42,6 +42,7 @@ public partial class App : Application
                 RcloneClient.FindRclone() ?? "rclone");
 
             _viewModel = new MainViewModel(manager);
+            _viewModel.RefreshStartAtLogin();
             _window = new MainWindow { DataContext = _viewModel };
             _window.Closing += (_, e) =>
             {

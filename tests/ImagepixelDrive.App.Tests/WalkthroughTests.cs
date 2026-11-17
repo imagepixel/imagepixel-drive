@@ -71,7 +71,8 @@ public sealed class WalkthroughTests : IDisposable
         Assert.SkipWhen(RcloneClient.FindRclone() is null, "rclone has not been fetched");
         var secrets = new MemorySecretStore();
         var manager = NewManager(secrets);
-        var main = new MainViewModel(manager, CloudStorage);
+        // as on Windows, where the setup program takes care of starting with the computer
+        var main = new MainViewModel(manager, CloudStorage) { LoginItem = null };
         var window = new MainWindow { DataContext = main };
         var opened = new List<string>();
         main.OpenInFileManager = opened.Add;
@@ -211,7 +212,7 @@ public sealed class WalkthroughTests : IDisposable
         window.Close();
 
         // --- the next start does not ask for the notes again -------------------------------
-        var next = new MainViewModel(manager, CloudStorage);
+        var next = new MainViewModel(manager, CloudStorage) { LoginItem = null };
         Assert.IsType<DashboardViewModel>(next.CurrentPage);
         next.Dashboard.Dispose();
     }
@@ -223,13 +224,24 @@ public sealed class WalkthroughTests : IDisposable
         Assert.SkipWhen(rclone is null, "rclone has not been fetched");
         Assert.SkipUnless(DriveMount.IsSupported, "this computer cannot show a drive");
 
+        // Imagepixel keeps a file in the bucket that tells how much storage is booked and used
+        var statusFile = Path.Combine(_root, "s3", "kunde-drive", "imagepixel", "storage-status.json");
+        Directory.CreateDirectory(Path.GetDirectoryName(statusFile)!);
+        File.WriteAllText(
+            statusFile,
+            $$"""{ "version": 1, "bookedBytes": 107374182400, "usedBytes": 91268055040, "measuredAt": "{{DateTimeOffset.Now:O}}" }""");
+
         using var server = await S3TestServer.StartAsync(rclone!, Path.Combine(_root, "s3"), "kunde-drive");
         using var link = new Link(server.Port);
         var manager = NewManager(new MemorySecretStore());
 
         // the notes on use and liability were confirmed at an earlier start
         manager.AcceptTerms(Texts.TermsVersion);
-        var main = new MainViewModel(manager, []);
+
+        // as on a Mac: the application lies in the folder for programs and does not start at login yet
+        var loginItem = new MacLoginItem(Path.Combine(_root, "LaunchAgents"));
+        var program = "/Applications/Imagepixel Drive.app/Contents/MacOS/ImagepixelDrive";
+        var main = new MainViewModel(manager, []) { LoginItem = loginItem, ExecutablePath = () => program };
         var window = new MainWindow { DataContext = main };
         string? picked = null;
         var opened = new List<string>();
@@ -266,7 +278,27 @@ public sealed class WalkthroughTests : IDisposable
 
         File.WriteAllText(Path.Combine(drive, "Fotos", "Bild.txt"), "bleibt nur online");
         await Wait.UntilAsync(async () => await manager.PendingUploadsAsync() == 0, TimeSpan.FromSeconds(60), "the uploads");
+
+        // --- the overview tells how much of the booked storage is used -------------------
+        await dashboard.RefreshStorageStatusAsync();
+        Assert.True(dashboard.HasStorageStatus);
+        Assert.Equal("85 GB von 100 GB belegt (85 %)", dashboard.StorageText);
+        Assert.StartsWith("Stand: heute", dashboard.StorageDetail);
+        Assert.Contains("zu 85 % belegt", dashboard.StorageWarning);
+        Assert.True(dashboard.ShowStartAtLoginNote);
+        await dashboard.RefreshStatusAsync(force: true);
+        Assert.Equal("Alles gespeichert.", dashboard.UploadStatus);
         Capture(window, "11-uebersicht");
+
+        // --- one click makes the application start at every login ------------------------
+        dashboard.StartAtLoginCommand.Execute(null);
+        Assert.True(loginItem.IsEnabled);
+        Assert.False(dashboard.ShowStartAtLoginNote);
+        Assert.Contains("startet jetzt bei jeder Anmeldung", dashboard.Notice);
+        var agent = File.ReadAllText(loginItem.FilePath);
+        Assert.Contains($"<string>{program}</string>", agent);
+        Assert.Contains("<string>--minimized</string>", agent);
+        Capture(window, "11a-startet-bei-der-anmeldung");
 
         // --- choosing the whole drive is refused, a folder on it is taken ----------------
         picked = drive;
@@ -337,6 +369,27 @@ public sealed class WalkthroughTests : IDisposable
         Assert.Empty(dashboard.OfflineFolders);
         Assert.True(File.Exists(Path.Combine(local, "Bleibt.txt")));
         Capture(window, "15-nicht-mehr-offline");
+
+        // --- the info page turns starting at login off and on ------------------------------
+        dashboard.ShowAboutCommand.Execute(null);
+        var about = Assert.IsType<AboutViewModel>(main.CurrentPage);
+        Assert.True(about.ShowStartAtLogin);
+        Assert.True(about.StartAtLogin);
+        about.StartAtLogin = false;
+        Assert.False(loginItem.IsEnabled);
+
+        // opened from its disk image, the application would not be found at the next login
+        program = "/Volumes/Imagepixel Drive/Imagepixel Drive.app/Contents/MacOS/ImagepixelDrive";
+        about.StartAtLogin = true;
+        Assert.Contains("Programme", about.StartAtLoginProblem);
+        Assert.False(loginItem.IsEnabled);
+        Capture(window, "16-info-autostart");
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        Assert.False(about.StartAtLogin);
+
+        about.BackCommand.Execute(null);
+        Assert.Same(dashboard, main.CurrentPage);
+        Assert.True(dashboard.ShowStartAtLoginNote);
 
         await main.ShutdownAsync();
         window.Close();

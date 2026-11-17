@@ -134,9 +134,18 @@ public sealed class OfflineKeeper : IAsyncDisposable
             IncludeSubdirectories = true,
             NotifyFilter = NotifyFilters.FileName | NotifyFilters.DirectoryName | NotifyFilters.LastWrite | NotifyFilters.Size,
         };
-        watcher.Changed += (_, _) => Signal();
-        watcher.Created += (_, _) => Signal();
-        watcher.Deleted += (_, _) => Signal();
+        // what the sync leaves out is no reason to start it
+        void OnChange(FileSystemEventArgs change)
+        {
+            if (!OfflineSync.IsLeftOut(Path.GetFileName(change.Name)))
+            {
+                Signal();
+            }
+        }
+
+        watcher.Changed += (_, e) => OnChange(e);
+        watcher.Created += (_, e) => OnChange(e);
+        watcher.Deleted += (_, e) => OnChange(e);
         watcher.Renamed += (_, _) => Signal();
         watcher.Error += (_, _) => Signal();
         watcher.EnableRaisingEvents = true;

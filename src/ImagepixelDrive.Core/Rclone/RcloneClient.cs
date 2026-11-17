@@ -243,6 +243,31 @@ public sealed class RcloneClient
         return result.Output;
     }
 
+    /// <summary>
+    /// Reads a small file that lies in the bucket next to the drive, not in it, as
+    /// text. Null if the drive is not stored in a bucket, the file is missing or the
+    /// storage does not answer.
+    /// </summary>
+    /// <param name="key">The key of the file in the bucket.</param>
+    /// <param name="cancellationToken">Cancels reading.</param>
+    public async Task<string?> ReadBucketTextAsync(string key, CancellationToken cancellationToken = default)
+    {
+        if (Access.Storage is not S3Storage storage)
+        {
+            return null;
+        }
+
+        var result = await RunAsync(
+            [
+                "cat", $"{DriveStorage.StoreRemote}:{storage.Bucket}/{key.TrimStart('/')}",
+                "--contimeout", "5s", "--timeout", "15s", "--low-level-retries", "1",
+            ],
+            null,
+            null,
+            cancellationToken);
+        return result.ExitCode == 0 && result.Output.Length > 0 ? result.Output : null;
+    }
+
     internal ProcessStartInfo CreateStartInfo(IEnumerable<string> arguments, string? program = null)
     {
         var startInfo = NewStartInfo(program ?? RclonePath, arguments);

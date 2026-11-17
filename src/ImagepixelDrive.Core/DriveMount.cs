@@ -64,6 +64,26 @@ public sealed class DriveMount : IAsyncDisposable
         wait "$mount"
         """.ReplaceLineEndings("\n");
 
+    // macOS: what its NFS client is told about the drive. Without them it keeps too
+    // much to itself, because rclone serves the drive without the services a file
+    // server usually has next to it.
+    private static readonly string[] MacMountOptions =
+    [
+        // Locks are kept on this computer; rclone has no lock service to ask. macOS
+        // locks the companion file ("._name") it stores extended attributes in, and
+        // without this option that fails: a file that carries attributes, as every
+        // download does, could then not be copied to the drive.
+        "locallocks",
+
+        // A name that was asked for before the file existed is asked for again.
+        // Folders of a bucket never change their time, so macOS would never learn
+        // that a file has appeared in one.
+        "nonegnamecache",
+
+        // For the same reason a folder list is trusted for three seconds, not for a minute.
+        "actimeo=3",
+    ];
+
     private static readonly TimeSpan StartTimeout = TimeSpan.FromSeconds(60);
     private static readonly TimeSpan StopTimeout = TimeSpan.FromSeconds(20);
 
@@ -221,6 +241,11 @@ public sealed class DriveMount : IAsyncDisposable
             "--rc", "--rc-addr", $"127.0.0.1:{port}",
             "-v",
         ];
+        if (OperatingSystem.IsMacOS())
+        {
+            arguments.AddRange(MacMountOptions.SelectMany(option => new[] { "--option", option }));
+        }
+
         if (options.LogFile is not null)
         {
             Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(options.LogFile))!);

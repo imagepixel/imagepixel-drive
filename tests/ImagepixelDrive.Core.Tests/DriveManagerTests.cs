@@ -13,9 +13,10 @@ public class DriveManagerTests
         Path.Combine(root, "data"),
         Path.Combine(root, "offline"))
     {
-        // Windows picks a free drive letter; elsewhere the drive is a folder, which
-        // must not be the one in the home folder of whoever runs the tests
-        Mountpoint = OperatingSystem.IsWindows() ? null : Path.Combine(root, "Laufwerk"),
+        // Windows: a drive letter no other test takes at the same time. Elsewhere the
+        // drive is a folder, which must not be the one in the home folder of whoever
+        // runs the tests.
+        Mountpoint = OperatingSystem.IsWindows() ? TestDrive.DriveLetterFromEnd(2) : Path.Combine(root, "Laufwerk"),
     };
 
     private static StorageSettings InFolder(string folder) => new() { Kind = StorageKind.LocalFolder, LocalPath = folder };

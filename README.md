@@ -15,12 +15,14 @@ A drive is not a backup: what you delete or overwrite on it is gone.
   on it like on any disk.
 - The names and the content of your files are encrypted with a password that only you know.
 - The application stays in the notification area, on macOS in the menu bar, and keeps
-  the drive there.
+  the drive there. It starts with the computer if you want it to: the setup program
+  offers that on Windows, the overview and the info page on macOS.
 
 **Two places to store it**
 
 - *Imagepixel Storage*: the online storage of Imagepixel, with the access data you
-  were given. Pasting the setup code fills them in.
+  were given. Pasting the setup code fills them in. The overview shows how much of
+  the storage you booked is used.
 - *A folder or disk of your own*: for example a folder inside OneDrive, Google Drive,
   Dropbox or iCloud Drive, or a USB disk. The cloud service of your choice then carries
   the encrypted files into its cloud and sees nothing but encrypted names and content.
@@ -94,19 +96,24 @@ program itself has been built but not run yet.
 The **macOS** version is a **beta**. It shows the drive through the NFS client that is
 part of macOS, so nothing has to be installed and no kernel extension is involved. It
 was tried on one Mac with an Intel chip and macOS 12: setting up a drive, reading,
-writing, saving from applications, renaming, an offline folder, and ending the
-application abruptly all worked. Two things did not, and they are why this version
-is not ready for daily use:
+writing, saving from applications, copying files together with their extended
+attributes, renaming, an offline folder, and ending the application abruptly all
+worked. It has not been used by hand in the Finder or with office programs for any
+length of time yet, which is why it stays a beta. What comes with a drive of this kind:
 
-- Files cannot be copied to the drive together with their extended attributes. Tools
-  that insist on copying them, as applications of macOS and most likely the Finder do
-  for files that were downloaded from the internet, fail and leave an empty file.
-  Copying without the attributes works.
+- macOS cannot store extended attributes on it, such as the note that a file was
+  downloaded from the internet. It keeps them in a companion file next to the file,
+  named `._` followed by the name of the file. The Finder hides these files; Windows
+  shows them. Offline folders leave them out.
 - macOS asks once for every application whether it may access files on a network
   volume, because that is what the drive is to it.
+- The Finder lists the drive under Locations as "localhost".
+- rclone serves the drive to this computer only, but does not ask who connects. On a
+  Mac that several people are logged in to at the same time, another one of them
+  could reach the drive while it is shown.
 
 The [workflow](.github/workflows/macos.yml) builds and tests this version on a Mac of
-GitHub.
+GitHub with an Apple chip and keeps the disk images as a download of the run.
 
 Known limits:
 
@@ -118,13 +125,13 @@ Known limits:
   in your profile), next to the drive. The same files are reachable at both places.
 - Changes of other computers show up on the drive after a minute at the latest, in an
   offline folder with the next sync.
+- An offline folder leaves out the files macOS writes by itself: `.DS_Store` and the
+  companion files whose names start with `._`.
 - Renaming a folder inside an offline folder transfers its files again.
 - A drive in a cloud folder that two computers change at the same time: if the cloud
   service keeps both versions of a file under a name of its own, the drive does not
   show its copy, because that name is not an encrypted one. The copy stays in the
   cloud folder.
-- The application does not start with the computer by itself on macOS yet, and it
-  does not show how much of the booked storage is used.
 
 ## Building
 
@@ -196,7 +203,7 @@ for its options.
 | `src/ImagepixelDrive.Core` | Runs rclone: access and encryption, the drive, the sync of offline folders; settings and secrets |
 | `src/ImagepixelDrive.App` | The desktop application (Avalonia) |
 | `tools/ImagepixelDrive.Prototype` | `ipd-prototype`: drive and offline folders from the command line |
-| `installer` | The script of the setup program for Windows, and what the disk image for macOS is made of |
+| `installer` | The script of the setup program for Windows, what the disk image for macOS is made of, and the script that draws the icon |
 | `tests` | Tests for the core and a walkthrough of the user interface |
 
 ## How it works
@@ -208,7 +215,7 @@ without changes.
 |---|---|
 | Encryption | The `crypt` backend of rclone with its standard settings and one password |
 | Drive on Windows | `rclone mount` through [WinFsp](https://winfsp.dev) |
-| Drive on macOS | `rclone nfsmount` through the NFS client of macOS |
+| Drive on macOS | `rclone nfsmount` through the NFS client of macOS, with the mount options `locallocks`, `nonegnamecache` and `actimeo=3` |
 | Offline folders | `rclone bisync` between a folder on the computer and the folder in the drive |
 
 Both sides of an offline folder carry a small file named `.imagepixel-offline`; a

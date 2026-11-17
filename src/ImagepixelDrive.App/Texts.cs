@@ -96,7 +96,56 @@ public static class Texts
         _ => $"{count} Dateien werden noch gespeichert …",
     };
 
+    /// <summary>What starting at login means on this system.</summary>
+    public static string StartAtLoginHint =>
+        $"Damit dein Laufwerk ohne dein Zutun da ist, kann das Programm bei jeder Anmeldung starten. Es wartet dann {TrayPlace}.";
+
+    public static string StartsAtLoginNow =>
+        $"{ProductName} startet jetzt bei jeder Anmeldung von selbst und wartet {TrayPlace}.";
+
+    public const string StartAtLoginNote =
+        "Imagepixel Drive startet noch nicht von selbst. Nach einem Neustart ist dein Laufwerk erst wieder da, wenn du das Programm öffnest.";
+
+    /// <summary>macOS: why the application cannot start at login from where it currently lies.</summary>
+    public const string MoveToApplications =
+        "Bitte ziehe Imagepixel Drive zuerst in den Ordner „Programme“ und öffne es von dort. "
+        + "Erst dann kann es bei der Anmeldung von selbst starten.";
+
+    /// <summary>How much of the booked storage is used, for example "12,4 GB von 100 GB belegt (12 %)".</summary>
+    public static string StorageUse(StorageStatus status) =>
+        $"{Bytes(status.UsedBytes)} von {Bytes(status.BookedBytes)} belegt ({Percent(status.Fraction)})";
+
+    /// <summary>The warning shown from 80 % on. The drive keeps working when the storage is full.</summary>
+    public static string? StorageWarning(StorageStatus? status) => status switch
+    {
+        { IsFull: true } =>
+            $"Dein gebuchter Speicher ist voll ({Percent(status.Fraction)}). Dein Laufwerk läuft weiter. Imagepixel meldet sich bei dir wegen der nächsten Größe.",
+        { IsWarning: true } =>
+            $"Dein Speicher ist zu {Percent(status.Fraction)} belegt. Dein Laufwerk läuft weiter. Imagepixel meldet sich bei dir wegen der nächsten Größe.",
+        _ => null,
+    };
+
     private static readonly CultureInfo German = CultureInfo.GetCultureInfo("de-DE");
+
+    public static string Bytes(long bytes)
+    {
+        string[] units = ["Bytes", "KB", "MB", "GB", "TB"];
+        double value = bytes;
+        var unit = 0;
+        while (value >= 1024 && unit < units.Length - 1)
+        {
+            value /= 1024;
+            unit++;
+        }
+
+        return unit == 0
+            ? $"{bytes} {units[0]}"
+            : string.Create(German, $"{value:0.#} {units[unit]}");
+    }
+
+    /// <summary>Formats a share as a whole percentage, for example "86 %".</summary>
+    public static string Percent(double fraction) =>
+        string.Create(German, $"{Math.Round(fraction * 100):0} %");
 
     /// <summary>Formats a point in time relative to today, for example "heute, 15:30".</summary>
     public static string Day(DateTimeOffset time, DateTimeOffset now)

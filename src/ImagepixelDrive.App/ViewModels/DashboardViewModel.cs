@@ -17,11 +17,13 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
 {
     private static readonly TimeSpan PollInterval = TimeSpan.FromSeconds(2);
     private static readonly TimeSpan ReachabilityInterval = TimeSpan.FromSeconds(30);
+    private static readonly TimeSpan StorageStatusInterval = TimeSpan.FromMinutes(30);
 
     private readonly DriveManager _manager;
     private readonly MainViewModel _main;
     private readonly DispatcherTimer _timer;
     private DateTimeOffset _reachabilityChecked = DateTimeOffset.MinValue;
+    private DateTimeOffset _storageStatusLoaded = DateTimeOffset.MinValue;
     private bool _polling;
 
     public DashboardViewModel(DriveManager manager, MainViewModel main)
@@ -72,6 +74,38 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
     [ObservableProperty]
     public partial bool IsReachable { get; set; } = true;
 
+    /// <summary>How much storage is booked and used, or null if there are no figures.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(
+        nameof(HasStorageStatus), nameof(StoragePercent), nameof(StorageText), nameof(StorageDetail),
+        nameof(StorageWarning), nameof(HasStorageWarning))]
+    public partial StorageStatus? StorageStatus { get; set; }
+
+    public bool HasStorageStatus => StorageStatus is not null;
+
+    public double StoragePercent => Math.Min(100, (StorageStatus?.Fraction ?? 0) * 100);
+
+    public string StorageText => StorageStatus is { } status ? Texts.StorageUse(status) : "";
+
+    public string StorageDetail => StorageStatus is { } status
+        ? "Stand: " + Texts.Day(status.MeasuredAt, DateTimeOffset.Now)
+        : "";
+
+    /// <summary>The warning shown from 80 % on.</summary>
+    public string? StorageWarning => Texts.StorageWarning(StorageStatus);
+
+    public bool HasStorageWarning => StorageWarning is not null;
+
+    /// <summary>macOS: nothing starts the application at login until the user agrees.</summary>
+    public bool ShowStartAtLoginNote => _main.LoginItem is { IsEnabled: false };
+
+    /// <summary>What a click on the overview led to, when there is something to say about it.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasNotice))]
+    public partial string? Notice { get; set; }
+
+    public bool HasNotice => !string.IsNullOrEmpty(Notice);
+
     public ObservableCollection<OfflineFolderViewModel> OfflineFolders { get; } = [];
 
     [ObservableProperty]
@@ -121,6 +155,11 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
                 _reachabilityChecked = DateTimeOffset.Now;
                 IsReachable = await _manager.IsReachableAsync();
             }
+
+            if (SupportsOfflineFolders && DateTimeOffset.Now - _storageStatusLoaded >= StorageStatusInterval)
+            {
+                _ = RefreshStorageStatusAsync();
+            }
         }
         catch (Exception e) when (e is InvalidOperationException or System.Net.Http.HttpRequestException or Core.Rclone.RcloneException)
         {
@@ -130,6 +169,30 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
         {
             _polling = false;
         }
+    }
+
+    /// <summary>Asks again how much storage is booked and used. Keeps the last figures if that fails.</summary>
+    public async Task RefreshStorageStatusAsync()
+    {
+        _storageStatusLoaded = DateTimeOffset.Now;
+        try
+        {
+            StorageStatus = await _main.LoadStorageStatus();
+        }
+        catch (Exception e) when (e is not OperationCanceledException)
+        {
+            // the figures are a convenience, a failure must not disturb the drive
+        }
+    }
+
+    /// <summary>Tells the page that starting at login may have been turned on or off elsewhere.</summary>
+    public void RefreshStartAtLogin() => OnPropertyChanged(nameof(ShowStartAtLoginNote));
+
+    [RelayCommand]
+    private void StartAtLogin()
+    {
+        Notice = _main.EnableStartAtLogin() ?? Texts.StartsAtLoginNow;
+        RefreshStartAtLogin();
     }
 
     [RelayCommand]
