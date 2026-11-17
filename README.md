@@ -50,10 +50,12 @@ were changed and the number of files in a folder stay visible in the storage.
 
 ## No warranty
 
-Imagepixel Drive is free software and comes without warranty. Imagepixel is liable for
-defects of the application and for lost data only in cases of intent and gross
-negligence. No storage is safe from every failure, the one of Imagepixel included, and
-a drive is not a backup: keep a second copy of what matters somewhere else.
+Imagepixel Drive is free, open-source software and comes without warranty. You use it
+at your own risk. Imagepixel is liable for defects of the application and for lost
+data only where German law does not allow liability to be excluded, above all in cases
+of intent and gross negligence. No storage is safe from every failure, the one of
+Imagepixel included, and a drive is not a backup: keep a second copy of what matters
+somewhere else.
 
 The full notes on use and liability are in
 [NUTZUNGSHINWEISE.md](NUTZUNGSHINWEISE.md) (in German). The application shows their

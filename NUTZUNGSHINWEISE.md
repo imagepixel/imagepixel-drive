@@ -1,6 +1,6 @@
 # Imagepixel Drive: Hinweise zur Nutzung und Haftung
 
-Stand: 17. November 2026
+Stand: 17. November 2026, zweite Fassung
 
 Diese Hinweise gelten für das Programm Imagepixel Drive. Anbieter ist Imagepixel; Anschrift und Kontakt stehen im Impressum auf www.imagepixel.de. Das Programm zeigt beim ersten Start eine Kurzfassung und bittet darum, sie zu bestätigen.
 
@@ -19,13 +19,20 @@ Das Programm wird so bereitgestellt, wie es ist. Imagepixel sagt keine bestimmte
 - **Kein Speicher ist vor jedem Ausfall sicher.** Das gilt für jeden Speicherort, an dem ein Laufwerk liegen kann: für den Speicher von Imagepixel ebenso wie für einen eigenen Ordner, eine eigene Festplatte oder den Speicher eines anderen Anbieters.
 - **Prüfen Sie Ihre Daten.** Sehen Sie nach dem Einrichten und danach von Zeit zu Zeit nach, ob Ihre Dateien vollständig vorhanden sind und sich öffnen lassen.
 
-## 4. Haftung
+## 4. Nutzung auf eigene Gefahr, Haftung
 
-(1) Imagepixel überlässt das Programm unentgeltlich. Für Schäden aus der Nutzung des Programms haftet Imagepixel deshalb nur bei Vorsatz und grober Fahrlässigkeit (§ 521 BGB). Für Sach- und Rechtsmängel des Programms haftet Imagepixel nur, wenn Imagepixel den Mangel arglistig verschwiegen hat (§§ 523, 524 BGB).
+(1) Sie nutzen das Programm auf eigene Gefahr. Imagepixel überlässt es unentgeltlich und haftet für Schäden aus seiner Nutzung nur in den Fällen des Absatzes 3. In allen anderen Fällen ist die Haftung ausgeschlossen. Das gilt insbesondere für den Verlust und die Beschädigung von Daten, für Dateien, die nicht, unvollständig oder fehlerhaft gespeichert oder abgeglichen wurden, für ein Laufwerk, das nicht erreichbar ist, für Ausfallzeiten, für entgangenen Gewinn und für Folgeschäden.
 
-(2) Im Übrigen ist die Haftung von Imagepixel ausgeschlossen, soweit das gesetzlich zulässig ist. Das gilt insbesondere für den Verlust und die Beschädigung von Daten, für entgangenen Gewinn und für Folgeschäden.
+(2) Für Sach- und Rechtsmängel des Programms steht Imagepixel nur ein, wenn Imagepixel den Mangel arglistig verschwiegen hat.
 
-(3) Unberührt bleiben die Haftung für Schäden aus der Verletzung des Lebens, des Körpers oder der Gesundheit, die Haftung nach dem Produkthaftungsgesetz und die Haftung im Umfang einer ausdrücklich übernommenen Garantie.
+(3) Imagepixel haftet
+
+- bei Vorsatz und grober Fahrlässigkeit, auch der gesetzlichen Vertreter und Erfüllungsgehilfen von Imagepixel,
+- für Schäden aus der Verletzung des Lebens, des Körpers oder der Gesundheit nach den gesetzlichen Vorschriften,
+- nach dem Produkthaftungsgesetz,
+- im Umfang einer ausdrücklich übernommenen Garantie.
+
+Diese Haftung schreibt das Gesetz vor. Sie lässt sich in Bedingungen wie diesen nicht ausschließen.
 
 (4) Die Absätze 1 bis 3 gelten auch für die persönliche Haftung von Beschäftigten, Vertretern und Erfüllungsgehilfen von Imagepixel.
 

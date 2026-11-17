@@ -12,15 +12,17 @@ public static class Texts
 
     /// <summary>
     /// The version of the notes on use and liability, which is the date they were last
-    /// changed. The full text is the file NUTZUNGSHINWEISE.md. The user confirms the
-    /// notes once at the first start; changing this value asks everyone once more.
+    /// changed, with a number behind it from the second version of a day on. The full
+    /// text is the file NUTZUNGSHINWEISE.md. The user confirms the notes once at the
+    /// first start; changing this value asks everyone once more.
     /// </summary>
-    public const string TermsVersion = "2026-11-17";
+    public const string TermsVersion = "2026-11-17-2";
 
     /// <summary>The short form of the notes, shown once at the first start.</summary>
     public const string TermsSoftware =
         "Imagepixel Drive ist kostenlose, quelloffene Software und wird ohne Gewährleistung bereitgestellt. "
-        + "Für Fehler des Programms und für den Verlust von Daten haftet Imagepixel nur bei Vorsatz und grober Fahrlässigkeit.";
+        + "Du nutzt das Programm auf eigene Gefahr. Für Fehler des Programms und für den Verlust von Daten haftet Imagepixel nur dort, "
+        + "wo das Gesetz es zwingend vorschreibt, vor allem bei Vorsatz und grober Fahrlässigkeit. Die Fälle stehen in den Nutzungshinweisen.";
 
     public const string TermsStorage =
         "Kein Speicher ist vor jedem Ausfall sicher, auch Imagepixel Storage nicht. Ein Laufwerk ist kein Backup: "
@@ -29,11 +31,11 @@ public static class Texts
     public const string TermsPassword =
         "Dein Passwort kennst nur du. Ohne das Passwort kommt niemand mehr an deine Dateien, auch Imagepixel nicht.";
 
-    public const string TermsConfirm = "Ich habe die Nutzungshinweise gelesen und bin damit einverstanden.";
+    public const string TermsConfirm = "Ich bin mit den Nutzungshinweisen einverstanden.";
 
     /// <summary>What the info page says about the notes the user confirmed.</summary>
     public const string TermsReminder =
-        "Imagepixel Drive ist kostenlose, quelloffene Software ohne Gewährleistung. Die Hinweise zur Nutzung und Haftung, "
+        "Imagepixel Drive ist kostenlose, quelloffene Software ohne Gewährleistung; du nutzt sie auf eigene Gefahr. Die Hinweise zur Nutzung und Haftung, "
         + "die du beim ersten Start bestätigt hast, kannst du hier nachlesen.";
 
     public const string PreviewNote =
