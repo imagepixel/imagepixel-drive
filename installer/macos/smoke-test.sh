@@ -28,16 +28,44 @@ cleanup() {
     if [ -n "$first" ]; then
         kill "$first" 2> /dev/null || true
     fi
-    hdiutil detach "$volume" -quiet 2> /dev/null || true
+    hdiutil detach "$volume" -force -quiet 2> /dev/null || true
     rm -rf "$work"
 }
 trap cleanup EXIT
 
+# Right after a disk image was opened or read, macOS may still be looking at it and
+# answers "Resource busy". That passes, so both steps are tried a few times; the last
+# try shows what the system has to say.
+attach() {
+    for _ in 1 2 3 4; do
+        if hdiutil attach "$dmg" -nobrowse -readonly -mountpoint "$volume" -quiet 2> /dev/null; then
+            return 0
+        fi
+        sleep 3
+    done
+    hdiutil attach "$dmg" -nobrowse -readonly -mountpoint "$volume"
+}
+
+detach() {
+    for _ in 1 2 3 4; do
+        if hdiutil detach "$volume" -quiet 2> /dev/null; then
+            return 0
+        fi
+        sleep 3
+    done
+    hdiutil detach "$volume" -force
+}
+
 mkdir -p "$volume"
-hdiutil attach "$dmg" -nobrowse -readonly -mountpoint "$volume" -quiet
-test -L "$volume/Applications"
+echo "Opening the disk image ..."
+attach
+if [ ! -L "$volume/Applications" ]; then
+    echo "The disk image has no link to the folder for programs." >&2
+    exit 1
+fi
+echo "Copying the application out of it ..."
 cp -R "$volume/Imagepixel Drive.app" "$work/"
-hdiutil detach "$volume" -quiet
+detach
 
 echo "Checking the signature ..."
 codesign --verify --deep --strict --verbose=2 "$app"

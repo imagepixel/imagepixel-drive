@@ -98,6 +98,10 @@ public sealed class WalkthroughTests : IDisposable
         Assert.True(setup.IsImagepixel);
         Capture(window, "01-start");
 
+        // a setup code that was pasted first plays no part in a drive at a place of one's own
+        setup.SetupCodeText = new SetupCode("kunde-drive", "KEYID", "geheim", "eu-central-2").Encode();
+        Assert.True(setup.CodeAccepted);
+
         setup.ChooseKindCommand.Execute("LocalFolder");
         Assert.True(setup.IsOwnPlace);
         Assert.True(setup.HasCloudFolders);
@@ -133,6 +137,9 @@ public sealed class WalkthroughTests : IDisposable
         Assert.True(dashboard.IsOwnPlace);
         Assert.False(dashboard.SupportsOfflineFolders);
         Assert.Equal(driveFolder, dashboard.OwnPlacePath);
+        Assert.Equal("", manager.Config.Storage!.Bucket);
+        Assert.Equal("", manager.Config.Storage.AccessKeyId);
+        Assert.Null(secrets.Get(SecretNames.SecretAccessKey));
 
         if (DriveMount.IsSupported)
         {
@@ -146,8 +153,7 @@ public sealed class WalkthroughTests : IDisposable
                 async () => await manager.PendingUploadsAsync() == 0 && Directory.EnumerateFiles(driveFolder, "*", SearchOption.AllDirectories).Count() >= 2,
                 TimeSpan.FromSeconds(60),
                 "the files arriving in the cloud folder");
-            await dashboard.RefreshStatusAsync(force: true);
-            Assert.Equal("Alles gespeichert.", dashboard.UploadStatus);
+            await ShownAsync(dashboard, () => dashboard.UploadStatus == "Alles gespeichert.", "that everything is stored");
             Capture(window, "04-uebersicht-eigener-speicherort");
 
             dashboard.OpenDriveCommand.Execute(null);
@@ -253,14 +259,30 @@ public sealed class WalkthroughTests : IDisposable
         main.OpenInFileManager = opened.Add;
         window.Show();
 
-        // --- the setup code from Imagepixel fills in the access data -------------------
+        // --- the setup code from Imagepixel is all it takes to reach the storage --------
         var setup = Assert.IsType<SetupViewModel>(main.CurrentPage);
         setup.Endpoint = $"http://127.0.0.1:{link.Port}";
-        setup.SetupCodeText = new SetupCode("kunde-drive", S3TestServer.AccessKey, S3TestServer.Secret, "us-east-1").Encode();
-        Assert.Equal("kunde-drive", setup.Bucket);
-        Assert.Equal(S3TestServer.AccessKey, setup.AccessKeyId);
         setup.Password = Password;
         setup.PasswordRepeat = Password;
+
+        // without a code, and with something that is not one, the page says what is missing
+        await setup.ConnectCommand.ExecuteAsync(null);
+        Assert.Equal(Texts.SetupCodeMissing, setup.ErrorMessage);
+        var code = new SetupCode("kunde-drive", S3TestServer.AccessKey, S3TestServer.Secret, "us-east-1").Encode();
+        setup.SetupCodeText = code[..^8];
+        Assert.False(setup.CodeAccepted);
+        Assert.True(setup.HasCodeProblem);
+        await setup.ConnectCommand.ExecuteAsync(null);
+        Assert.Equal(Texts.SetupCodeProblem, setup.ErrorMessage);
+        Capture(window, "09-kein-gueltiger-code");
+
+        // pasted as it came in a message, with a line break in it
+        setup.SetupCodeText = code[..30] + "\r\n" + code[30..] + " ";
+        Assert.True(setup.CodeAccepted);
+        Assert.False(setup.HasCodeProblem);
+        Assert.Null(setup.ErrorMessage);
+        Assert.Equal("kunde-drive", setup.Bucket);
+        Assert.Equal(S3TestServer.AccessKey, setup.AccessKeyId);
         Capture(window, "10-imagepixel-storage");
 
         await setup.ConnectCommand.ExecuteAsync(null);
@@ -290,8 +312,7 @@ public sealed class WalkthroughTests : IDisposable
         Assert.StartsWith("Stand: heute", dashboard.StorageDetail);
         Assert.Contains("zu 85 % belegt", dashboard.StorageWarning);
         Assert.True(dashboard.ShowStartAtLoginNote);
-        await dashboard.RefreshStatusAsync(force: true);
-        Assert.Equal("Alles gespeichert.", dashboard.UploadStatus);
+        await ShownAsync(dashboard, () => dashboard.UploadStatus == "Alles gespeichert.", "that everything is stored");
         Capture(window, "11-uebersicht");
 
         // --- one click makes the application start at every login ------------------------
@@ -328,8 +349,7 @@ public sealed class WalkthroughTests : IDisposable
 
         // --- the connection is lost: the folder stays usable ------------------------------
         link.Down();
-        await dashboard.RefreshStatusAsync(force: true);
-        Assert.False(dashboard.IsReachable);
+        await ShownAsync(dashboard, () => !dashboard.IsReachable, "that the storage does not answer");
         File.WriteAllText(Path.Combine(local, "Unterwegs.txt"), "ohne Verbindung geschrieben");
         File.WriteAllText(Path.Combine(local, "Plan.txt"), "unterwegs geaendert");
         await OutcomeAsync(manager, dashboard, SyncOutcome.Offline);
@@ -340,8 +360,7 @@ public sealed class WalkthroughTests : IDisposable
 
         // --- back again: what changed on the way is carried over --------------------------
         link.Up();
-        await dashboard.RefreshStatusAsync(force: true);
-        Assert.True(dashboard.IsReachable);
+        await ShownAsync(dashboard, () => dashboard.IsReachable, "that the storage answers again");
         folder.SyncNowCommand.Execute(null);
         await Wait.UntilAsync(
             () => OnDrive(() => File.Exists(Path.Combine(drive, "Projekte", "Unterwegs.txt"))), TimeSpan.FromSeconds(90), "the file written without a connection");
@@ -431,6 +450,21 @@ public sealed class WalkthroughTests : IDisposable
 
     private static Task SyncedAsync(DriveManager manager, DashboardViewModel dashboard) =>
         OutcomeAsync(manager, dashboard, SyncOutcome.Synced);
+
+    /// <summary>
+    /// Waits until the overview shows something it looks up itself. It does so every
+    /// two seconds, and a look that is asked for while another one is under way is
+    /// left out, so asking once and reading the answer is not enough.
+    /// </summary>
+    private static Task ShownAsync(DashboardViewModel dashboard, Func<bool> shown, string what) =>
+        Wait.UntilAsync(
+            async () =>
+            {
+                await dashboard.RefreshStatusAsync(force: true);
+                return shown();
+            },
+            TimeSpan.FromSeconds(30),
+            "the overview showing " + what);
 
     /// <summary>
     /// Looks at the drive from a thread of its own. The drive answers as fast as its

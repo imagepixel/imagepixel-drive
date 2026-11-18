@@ -225,14 +225,17 @@ public sealed partial class DriveManager : IAsyncDisposable
         }
 
         await StopAsync();
-        _client = client;
-        Config.Storage = storage;
-        Config.OfflineFolders = [];
-        _store.Save(Config);
+
+        // The secrets come first: if the keyring of the computer refuses them, no drive
+        // is set up that would lack its password at the next start.
         _secrets.Set(SecretNames.DrivePassword, password);
         _secrets.Set(SecretNames.ObscuredDrivePassword, client.Access.ObscuredPassword);
         _secrets.Set(SecretNames.SecretAccessKey, storage.IsImagepixel ? secretAccessKey : null);
         _secrets.Set(SecretNames.ApiToken, storage.IsImagepixel ? apiToken : null);
+        _client = client;
+        Config.Storage = storage;
+        Config.OfflineFolders = [];
+        _store.Save(Config);
         return state;
     }
 

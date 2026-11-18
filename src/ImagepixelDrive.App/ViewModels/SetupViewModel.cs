@@ -43,17 +43,28 @@ public partial class SetupViewModel : ViewModelBase
 
     public bool HasCloudFolders => CloudFolders.Count > 0;
 
+    /// <summary>
+    /// All the customer enters for Imagepixel Storage: the setup code carries the
+    /// bucket and both keys.
+    /// </summary>
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasCodeProblem))]
     public partial string SetupCodeText { get; set; } = "";
 
+    /// <summary>Whether what was entered is a setup code of Imagepixel. The storage cannot be reached without one.</summary>
     [ObservableProperty]
-    public partial string Bucket { get; set; } = "";
+    [NotifyPropertyChangedFor(nameof(HasCodeProblem))]
+    public partial bool CodeAccepted { get; set; }
 
-    [ObservableProperty]
-    public partial string AccessKeyId { get; set; } = "";
+    /// <summary>Something was entered, but it is not a setup code.</summary>
+    public bool HasCodeProblem => !CodeAccepted && !string.IsNullOrWhiteSpace(SetupCodeText);
 
-    [ObservableProperty]
-    public partial string SecretAccessKey { get; set; } = "";
+    // what the setup code said; none of it is shown or typed
+    internal string Bucket { get; private set; } = "";
+
+    internal string AccessKeyId { get; private set; } = "";
+
+    internal string SecretAccessKey { get; private set; } = "";
 
     /// <summary>The folder the customer chose for a drive at a place of their own.</summary>
     [ObservableProperty]
@@ -121,7 +132,6 @@ public partial class SetupViewModel : ViewModelBase
     [ObservableProperty]
     public partial string BusyText { get; set; } = "";
 
-    // A pasted setup code fills in the fields the customer would otherwise type.
     partial void OnSetupCodeTextChanged(string value)
     {
         if (SetupCode.TryDecode(value, out var code))
@@ -133,7 +143,20 @@ public partial class SetupViewModel : ViewModelBase
             _prefix = code.Prefix;
             _apiUrl = code.ApiUrl;
             _apiToken = code.ApiToken;
+            CodeAccepted = true;
             ErrorMessage = null;
+        }
+        else
+        {
+            // nothing of a code entered before stays behind
+            Bucket = "";
+            AccessKeyId = "";
+            SecretAccessKey = "";
+            _region = ImagepixelStorage.DefaultRegion;
+            _prefix = null;
+            _apiUrl = null;
+            _apiToken = null;
+            CodeAccepted = false;
         }
     }
 
@@ -176,10 +199,12 @@ public partial class SetupViewModel : ViewModelBase
         var storage = new StorageSettings
         {
             Kind = Kind,
-            Bucket = Bucket.Trim(),
+
+            // what a setup code said belongs to Imagepixel Storage only
+            Bucket = IsImagepixel ? Bucket.Trim() : "",
             Region = _region,
             Prefix = _prefix ?? ImagepixelStorage.DefaultPrefix,
-            AccessKeyId = AccessKeyId.Trim(),
+            AccessKeyId = IsImagepixel ? AccessKeyId.Trim() : "",
             LocalPath = IsOwnPlace ? DriveFolder! : "",
             ApiUrl = IsImagepixel ? _apiUrl ?? "" : "",
             Endpoint = Endpoint,
@@ -219,7 +244,7 @@ public partial class SetupViewModel : ViewModelBase
                     return;
                 case DriveState.Unreachable:
                     ErrorMessage = IsImagepixel
-                        ? "Der Speicher ist nicht erreichbar. Bitte prüfe die Angaben und die Internetverbindung."
+                        ? Texts.StorageUnreachable
                         : "Der Ordner ist nicht erreichbar. Ist die Festplatte angeschlossen?";
                     return;
                 case DriveState.Empty:
@@ -247,9 +272,9 @@ public partial class SetupViewModel : ViewModelBase
     {
         if (IsImagepixel)
         {
-            if (string.IsNullOrWhiteSpace(Bucket) || string.IsNullOrWhiteSpace(AccessKeyId) || string.IsNullOrWhiteSpace(SecretAccessKey))
+            if (!CodeAccepted)
             {
-                return "Bitte trage Bucket-Name, Zugangsschlüssel und geheimen Schlüssel ein.";
+                return HasCodeProblem ? Texts.SetupCodeProblem : Texts.SetupCodeMissing;
             }
         }
         else if (DriveFolder is null)

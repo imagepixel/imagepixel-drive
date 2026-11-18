@@ -20,9 +20,9 @@ A drive is not a backup: what you delete or overwrite on it is gone.
 
 **Two places to store it**
 
-- *Imagepixel Storage*: the online storage of Imagepixel, with the access data you
-  were given. Pasting the setup code fills them in. The overview shows how much of
-  the storage you booked is used.
+- *Imagepixel Storage*: the online storage of Imagepixel. You paste the setup code you
+  were given, one line of text, and nothing else is needed to reach the storage. The
+  overview shows how much of the storage you booked is used.
 - *A folder or disk of your own*: for example a folder inside OneDrive, Google Drive,
   Dropbox or iCloud Drive, or a USB disk. The cloud service of your choice then carries
   the encrypted files into its cloud and sees nothing but encrypted names and content.
@@ -76,6 +76,11 @@ rclone ls ipdrive:
 rclone copy ipdrive: C:\Rescue
 ```
 
+The bucket, the key and its secret are what your setup code holds. The text after
+`IPD1-` is a JSON object in base64url notation with the fields `b` (bucket), `k` (key
+id), `s` (secret) and `r` (region), and `p` if the drive lies in another folder of the
+bucket than `drive`.
+
 For a drive in a folder of your own, name the folder instead of the storage:
 
 ```
@@ -87,7 +92,7 @@ A drive is not a Cryptomator vault; the two cannot open each other's files.
 
 ## Status
 
-Early development, version 0.1.0. Nothing is signed yet, and nobody has used the
+Early development, version 0.1.1. Nothing is signed yet, and nobody has used the
 application in daily work.
 
 The **Windows** version has a setup program. Its tests show a real drive and run real

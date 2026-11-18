@@ -38,6 +38,17 @@ public static class Texts
         "Imagepixel Drive ist kostenlose, quelloffene Software ohne Gewährleistung; du nutzt sie auf eigene Gefahr. Die Hinweise zur Nutzung und Haftung, "
         + "die du beim ersten Start bestätigt hast, kannst du hier nachlesen.";
 
+    public const string SetupCodeAccepted = "Einrichtungscode erkannt.";
+
+    public const string SetupCodeProblem =
+        "Das ist kein gültiger Einrichtungscode. Bitte füge ihn vollständig ein, so wie du ihn von Imagepixel bekommen hast.";
+
+    public const string SetupCodeMissing = "Bitte füge den Einrichtungscode ein, den du von Imagepixel bekommen hast.";
+
+    /// <summary>Said when the storage of Imagepixel does not answer to what the setup code holds.</summary>
+    public const string StorageUnreachable =
+        "Der Speicher ist nicht erreichbar. Bitte prüfe die Internetverbindung. Besteht sie, gilt der Einrichtungscode vielleicht nicht mehr.";
+
     public const string PreviewNote =
         "Das ist eine Vorabversion. Sie wurde noch nicht im Alltag erprobt. Lege wichtige Dateien nicht nur hier ab.";
 
